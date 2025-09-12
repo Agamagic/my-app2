@@ -239,7 +239,56 @@
     if(demo){ state.cards.push(c); } else { state.cards.unshift(c); }
     if(!state.currentId) state.currentId=c.id; saveState();
   }
-  function ensureDemo(){ if(state.cards.length) return; addCard('good morning','buenos días',true); addCard('thank you','gracias',true); addCard('how much is this?','¿cuánto cuesta esto?',true); }
+  function ensureDemo(){ if(state.cards.length) return;
+addCard('Hello! Good morning','¡Hola! Buenos días',true);
+addCard('Thank you','¡Gracias!',true);
+addCard('How much is this?','¿Cuánto cuesta esto?',true)
+addCard('The salad','La ensalada',true);
+addCard('The soup','La sopa',true);
+addCard('a menu','un menú',true);
+addCard('a napkin','una servilleta',true);
+addCard('Thank you very much','¡Muchas gracias!',true);
+addCard('Goodbye!','¡Adiós!',true);
+addCard('Very well, and you?','Muy bien, ¿y tú?',true);
+addCard('a fork','un tenedor',true);
+addCard('a spoon','una cuchara',true);
+addCard('The United States','los Estados Unidos',true);
+addCard('Wow excellent!','¡Wow! ¡Qué bueno!',true);
+addCard('Hello, How are you?','Hola, ¿cómo estás?',true);
+addCard('Yes, of course','Sí, claro',true);
+addCard('Where are you from?','¿De dónde eres?',true);
+addCard('A table for two, please','Una mesa para dos, por favor',true);
+addCard('do sports','hacer deportes',true);
+addCard('the fish','el pescado',true);
+addCard('read','leer',true);
+addCard('write','escribir',true);
+addCard('I am Max','Yo soy Max',true);
+addCard('Hello, nice to meet you','Hola, mucho gusto',true);
+addCard('Welcome!','¡Bienvenidos!',true);
+addCard('cook','cocinar',true);
+addCard('I am from Armenia','Yo soy de Armenia',true);
+addCard('Delicious food','Comida rica',true);
+addCard('What do you like to do?','¿Qué te gusta hacer?',true);
+addCard('Welcome to the restaurant!','¡Bienvenido(a) al restaurante!',true);
+addCard('What is your name?','¿Cómo te llamas?',true);
+addCard('Could you bring a menu please?','¿Podría traer un menú, por favor?',true);
+addCard('What do you like to cook?','¿Qué te gusta cocinar?',true);
+addCard('My name is Victor (I am called)','Me llamo Victor',true);
+addCard('See you later','Hasta luego',true);
+addCard('You are welcome (It is nothing)','De nada',true);
+addCard('I like your Spanish','¡Me gusta tu español!',true);
+addCard('I am from the United States','Yo soy de los Estados Unidos',true);
+addCard('Mexico','México',true);
+addCard('Canada','Canadá',true);
+addCard('France','Francia',true);
+addCard('How many people are in your party? (How many are you?)','¿Cuántos son?',true);
+addCard('Do you want anything else?','¿Desea algo más?',true);
+addCard('I would recommend the pasta','Le recomendaría la pasta',true);
+addCard('What would you like? (What (do you) desire?)','¿Qué desea?',true);
+addCard('I like to read (write)','Me gusta leer (escribir)',true);
+addCard('What do you recommend? (me)','¿Qué me recomienda?',true);
+addCard('I like to do yoga (sports)','Me gusta hacer yoga (deportes)',true);
+addCard('Can you say that again, please?','¿Puedes decirlo de nuevo, por favor?',true);}
 
   function computeProgress(){ const total=state.cards.length;
     const learnedCount=state.cards.filter(c=>c.learned===true||c.box>=4).length;
@@ -667,4 +716,5 @@
 </script>
 </body>
 </html>
+
 
