@@ -290,7 +290,19 @@ addCard('What would you like? (What (do you) desire?)','¿Qué desea?',true);
 addCard('I like to read (write)','Me gusta leer (escribir)',true);
 addCard('What do you recommend? (me)','¿Qué me recomienda?',true);
 addCard('I like to do yoga (sports)','Me gusta hacer yoga (deportes)',true);
-addCard('Can you say that again, please?','¿Puedes decirlo de nuevo, por favor?',true);}
+addCard('Can you say that again, please?','¿Puedes decirlo de nuevo, por favor?',true);
+addCard('What don’t you like to do?','¿Qué no te gusta hacer?',true);
+addCard('I don’t like to do yoga','No me gusta hacer yoga',true);
+addCard('I don’t like to read (write)','No me gusta leer (escribir)',true);
+addCard('Oh, I see','Ah, ya veo',true);
+addCard('I’m sorry, what did you say?','Disculpa, ¿qué dijiste?',true);
+addCard('draw','dibujar',true);
+addCard('paint','pintar',true);
+addCard('study Spanish','estudiar español',true);
+addCard('sing','cantar',true);
+addCard('I like to study Spanish','Me gusta estudiar español',true);
+addCard('I like to draw and paint','Me gusta dibujar y pintar',true);
+addCard('I like to cook and do sports','Me gusta cocinar y hacer deportes',true);}
 
   function computeProgress(){ const total=state.cards.length;
     const learnedCount=state.cards.filter(c=>c.learned===true||c.box>=4).length;
@@ -718,6 +730,7 @@ addCard('Can you say that again, please?','¿Puedes decirlo de nuevo, por favor?
 </script>
 </body>
 </html>
+
 
 
 
