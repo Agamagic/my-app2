@@ -35,7 +35,7 @@
   .cardwrap{margin-top:14px}
   .card3d{position:relative;height:min(64vh,360px);aspect-ratio:3/4;margin:0 auto;border-radius:var(--radius);perspective:1200px;overflow:visible}
   .card{position:absolute;inset:0;border-radius:var(--radius);transform-style:preserve-3d;transition:transform .6s var(--ease)}
-  .face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(20px,4.8vw,26px);padding:18px;text-align:center;border-radius:var(--radius);background:linear-gradient(180deg,#2a2452,#211c40);box-shadow:var(--shadow);backface-visibility:hidden}
+  .face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(20px,4.8vw,26px);padding:18px;text-align:center;border-radius:var(--radius);background:linear-gradient(180deg,var(--cardGrad1,#2a2452),var(--cardGrad2,#211c40));box-shadow:var(--shadow);backface-visibility:hidden}
   .back{transform:rotateY(180deg)}
   .zones{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr 1fr;border-radius:var(--radius);overflow:hidden}
   .zones button{appearance:none;background:transparent;border:none}
@@ -83,6 +83,12 @@
   .linklike{color:#9ea0ff;text-decoration:underline;cursor:pointer}
   :focus-visible{outline:2px solid #8c7aff;outline-offset:2px;border-radius:10px}
   .spinner{display:inline-block;min-width:1.2em}
+ 
+ /* ---- Color palettes in Settings ---- */
+.palette{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.swatch{width:28px;height:28px;border-radius:8px;border:none;cursor:pointer;box-shadow:var(--shadow-soft);
+        outline:1px solid rgba(255,255,255,.08)}
+.swatch[aria-pressed="true"]{outline:2px solid #8c7aff}
 </style>
 </head>
 <body>
@@ -91,7 +97,7 @@
     <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Прогресс обучения"><span id="progressFill"></span></div>
     <div class="meta" id="progressText">Прогресс: 0% (0/0) | Повторить: 0</div>
     <div class="tabs" role="tablist" aria-label="Навигация вкладок">
-      <button class="iconbtn" id="btnSettings" title="Настройки (экспорт/импорт)" aria-label="Настройки">⚙️</button>
+      <button class="iconbtn" id="btnSettings" title="Настройки" aria-label="Настройки">⚙️</button>
       <div class="tabbar">
         <button role="tab" aria-selected="true" id="tabFlash" class="active">Flashcards</button>
         <button role="tab" aria-selected="false" id="tabQuiz">Квиз</button>
@@ -128,12 +134,11 @@
       </div>
       <button class="chip" id="btnDirection">EN→ES</button>
       <button class="chip" id="btnShuffle">Перемешать</button>
-      <button class="chip" id="btnToggleList" aria-controls="list" aria-expanded="true">Скрыть список</button>
-    </div>
+          </div>
 
-    <div class="listwrap">
-      <div class="list" id="list"></div>
-    </div>
+    <div class="listwrap" id="mainListWrap" hidden>
+  <div class="list" id="list"></div>
+</div>
   </section>
 
   <!-- QUIZ -->
@@ -150,19 +155,28 @@
 <!-- SETTINGS MODAL -->
 <dialog id="dlgSettings" aria-label="Настройки">
   <form method="dialog" class="modal">
-    <h3>Настройки</h3>
-    <div class="row">
-      <button type="button" class="chip" id="btnExport">Экспорт CSV</button>
-      <label class="chip" for="fileImport" style="cursor:pointer">Импорт (CSV/JSON)</label>
-      <input id="fileImport" type="file" accept=".csv,.json,text/csv,application/json" hidden />
-<button type="button" class="chip" id="btnReset"
-  onclick="localStorage.removeItem('minimal-flashcards-html-v1'); location.reload();">
-  Сброс данных
-</button>
-    </div>
-    <div class="footnote">Импорт добавит карточки в начало. При ошибке форматирования появится подсказка.</div>
-    <div class="actions"><button class="chip" value="cancel">Закрыть</button></div>
-  </form>
+  <h3>Настройки</h3>
+
+  <div class="row" style="flex-direction:column;align-items:flex-start;width:100%">
+    <div>Фон приложения</div>
+    <div id="bgPalette" class="palette" aria-label="Выбор фона"></div>
+  </div>
+
+  <div class="row" style="flex-direction:column;align-items:flex-start;width:100%">
+    <div>Цвет карточек</div>
+    <div id="cardPalette" class="palette" aria-label="Выбор цвета карточек"></div>
+  </div>
+
+  <div class="row">
+  <button type="button" class="chip" id="btnToggleList" aria-expanded="true">Скрыть список</button>
+  <button type="button" class="chip" id="btnReset"
+    onclick="localStorage.removeItem('minimal-flashcards-html-v1'); location.reload();">
+    Сброс данных
+  </button>
+</div>
+<div id="settingsListWrap" class="listwrap" hidden></div>
+  <div class="actions"><button class="chip" value="cancel">Закрыть</button></div>
+</form>
 </dialog>
 
 <!-- ADD MODAL -->
@@ -179,15 +193,21 @@
       <div class="meta" id="trStatus"><span class="spinner" aria-live="polite"></span></div>
     </div>
     <div class="actions" style="justify-content:space-between">
-      <div class="row" style="margin:0">
-        <button class="chip" type="button" id="btnSwap">⇄ Поменять поля</button>
-        <button class="chip" type="button" id="btnTranslate">Перевести</button>
-      </div>
-      <div class="row" style="margin:0">
-        <button class="chip" id="btnClearAdd" type="button">Очистить</button>
-        <button class="chip" id="btnAddConfirm" type="submit">Добавить</button>
-      </div>
-    </div>
+  <div class="row" style="margin:0">
+    <button class="chip" type="button" id="btnSwap">⇄ Поменять поля</button>
+    <button class="chip" type="button" id="btnTranslate">Перевести</button>
+  </div>
+  <div class="row" style="margin:0">
+    <button class="chip" id="btnClearAdd" type="button">Очистить</button>
+    <button class="chip" id="btnAddConfirm" type="submit">Добавить</button>
+  </div>
+</div>
+
+<!-- Отдельный блок только для закрытия -->
+<div class="actions" style="justify-content:flex-end">
+  <button class="chip" type="button" id="btnAddClose">Закрыть</button>
+</div>
+
     <div class="footnote">Онлайн-перевод через LibreTranslate. Если сети нет — офлайн шаблоны (>1000 типовых фраз) и мини-словарь.</div>
   </form>
 </dialog>
@@ -207,46 +227,42 @@
     if(excludeIndex!=null && n>1 && pick===excludeIndex){ r=prng(seed+0.1234)*total; acc=0; for(let i=0;i<n;i++){ acc+=weights[i]; if(r<=acc){ pick=i; break; } } }
     return pick;
   }
-  function toCSV(rows){return rows.map(r=>r.map(cell=>{const s=(cell??'').toString();const must=/[",\n\r\t]/.test(s);const esc=s.replace(/"/g,'""');return must?`"${esc}"`:esc;}).join(',')).join('\r\n')}
-  function parseCSV(text){
-    const out=[];let i=0,cur='',row=[],inQ=false;const pushCell=()=>{row.push(cur);cur='';};const pushRow=()=>{out.push(row);row=[];};
-    while(i<text.length){const ch=text[i];
-      if(inQ){ if(ch=='"'){ if(text[i+1]=='"'){cur+='"';i+=2;continue;} inQ=false;i++;continue;} cur+=ch;i++;continue; }
-      else{ if(ch=='"'){inQ=true;i++;continue;} if(ch==','||ch=='\t'){pushCell();i++;continue;}
-        if(ch=='\r'){ if(text[i+1]=='\n'){pushCell();pushRow();i+=2;continue;} pushCell();pushRow();i++;continue;}
-        if(ch=='\n'){pushCell();pushRow();i++;continue;} cur+=ch;i++;continue; }
-    }
-    pushCell(); if(row.length>1||(row.length===1&&row[0]!=='')) pushRow();
-    return out.filter(r=>r.length>0&&r.some(x=>(x??'').trim()!==''));
-  }
   function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
   function loadState(){ try{const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return null; return JSON.parse(raw);}catch(e){console.warn('loadState fail',e); return null;} }
   function escapeHtml(s){ return (s??'').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
   /** ---------- State ---------- */
-  const state = {
-    cards: [],
-    currentId: null,
-    direction: 'EN2ES',
-    tab: 'flash',
-    shuffleSeed: 1.2345,
-    showList: true,
-    quiz: { pool:[], index:0, right:0, finished:false, lastAnswer:null }
-  };
+const state = {
+  cards: [],
+  currentId: null,
+  direction: 'EN2ES',
+  tab: 'flash',
+  shuffleSeed: 1.2345,
+  showList: true,
+
+  // ← новое: состояние темы
+  theme: { bg0:'', bg1:'', card1:'', card2:'' },
+
+  quiz: { pool:[], index:0, right:0, finished:false, lastAnswer:null }
+};
 
   /** ---------- DOM ---------- */
   const elProgressFill = $('#progressFill'), elProgressText=$('#progressText'), elCounters=$('#counters');
-  const elFront=$('#frontText'), elBack=$('#backText'), elCard=$('#card'), elList=$('#list'), elListWrap=document.querySelector('.listwrap');
+  const elFront=$('#frontText'), elBack=$('#backText'), elCard=$('#card'), elList=$('#list');
+const mainListWrap = $('#mainListWrap');
+const settingsListWrap = $('#settingsListWrap');
   const elSearch=$('#searchInput'), elBtnDir=$('#btnDirection'), elBtnShuffle=$('#btnShuffle'), btnToggleList=$('#btnToggleList');
   const elZoneBack=$('#zoneBack'), elZoneFlip=$('#zoneFlip'), elZoneNext=$('#zoneNext');
   const btnLearned=$('#btnLearned'), btnRepeat=$('#btnRepeat');
   const tabFlash=$('#tabFlash'), tabQuiz=$('#tabQuiz'), viewFlash=$('#viewFlash'), viewQuiz=$('#viewQuiz');
   const btnSettings=$('#btnSettings'), btnAdd=$('#btnAdd'), dlgSettings=$('#dlgSettings');
   const dlgAdd=$('#dlgAdd'), addForm=$('#addForm'), addFront=$('#addFront'), addBack=$('#addBack');
-  const btnClearAdd=$('#btnClearAdd'), btnExport=$('#btnExport'), fileImport=$('#fileImport');
+  const btnClearAdd=$('#btnClearAdd');
+  const btnAddClose = $('#btnAddClose');
   const quizMeta=$('#quizMeta'), quizPrompt=$('#quizPrompt'), quizOpts=$('#quizOpts'), quizRestart=$('#quizRestart');
   const autoTranslate=$('#autoTranslate'), btnTranslate=$('#btnTranslate'), btnSwap=$('#btnSwap'), trStatus=$('#trStatus');
-
+  const bgPalette=$('#bgPalette'), cardPalette=$('#cardPalette');
+ 
   /** ---------- App ---------- */
   function uid(){ return Math.random().toString(36).slice(2) + Date.now().toString(36); }
   function addCard(front, back, demo=false){
@@ -409,10 +425,11 @@ addCard('ten','diez',true);
 
   /** List toggle (single button) */
   function applyListVisibility(){
-    elListWrap.hidden = !state.showList;
-    btnToggleList.textContent = state.showList ? 'Скрыть список' : 'Показать список';
-    btnToggleList.setAttribute('aria-expanded', String(state.showList));
-  }
+  if (mainListWrap) mainListWrap.hidden = true;            // на главном экране всегда скрыто
+  if (settingsListWrap) settingsListWrap.hidden = !state.showList; // показываем в модалке
+  btnToggleList.textContent = state.showList ? 'Скрыть список' : 'Показать список';
+  btnToggleList.setAttribute('aria-expanded', String(state.showList));
+}
   btnToggleList.addEventListener('click', () => { state.showList = !state.showList; applyListVisibility(); saveState(); });
 
   /** Direction & shuffle */
@@ -433,6 +450,82 @@ addCard('ten','diez',true);
     if(act==='delete'){ const i=state.cards.findIndex(c=>c.id===id); if(i>=0) state.cards.splice(i,1); if(state.currentId===id) state.currentId=state.cards[0]?.id??null; }
     saveState(); refreshProgressUI(); renderList(); renderFlash();
   });
+
+/** ---------- Theme presets & palette ---------- */
+function setVar(name,val){ document.documentElement.style.setProperty(name, val); }
+function applyTheme(t){
+  if(!t) return;
+  if(t.bg0)   setVar('--bg0', t.bg0);
+  if(t.bg1)   setVar('--bg1', t.bg1);
+  if(t.card1) setVar('--cardGrad1', t.card1);
+  if(t.card2) setVar('--cardGrad2', t.card2);
+}
+
+// 10 вариантов фона (bg1 сверху → bg0 снизу)
+const BG_PRESETS = [
+  {name:'Default',         bg0:'#0b0a12', bg1:'#141126'},
+  {name:'Deep Blue',       bg0:'#091735', bg1:'#0a0f2d'},
+  {name:'Midnight Purple', bg0:'#100a1a', bg1:'#1a1029'},
+  {name:'Emerald',         bg0:'#071512', bg1:'#0b1f1a'},
+  {name:'Teal Dark',       bg0:'#0a171a', bg1:'#0d1f24'},
+  {name:'Charcoal',        bg0:'#15151b', bg1:'#0e0e12'},
+  {name:'Warm Brown',      bg0:'#120b09', bg1:'#1e1310'},
+  {name:'Navy',            bg0:'#0f223d', bg1:'#0a1630'},
+  {name:'Indigo',          bg0:'#0f0b2c', bg1:'#16123f'},
+  {name:'Graphite',        bg0:'#0a0c10', bg1:'#111418'},
+];
+
+// 10 вариантов градиента карточек (card1 сверху → card2 снизу)
+const CARD_PRESETS = [
+  {name:'Default',     card1:'#2a2452', card2:'#211c40'},
+  {name:'Blue Steel',  card1:'#2b3a52', card2:'#1d293d'},
+  {name:'Forest',      card1:'#23403a', card2:'#1a2f2a'},
+  {name:'Maroon',      card1:'#3f2a2a', card2:'#2d1d1d'},
+  {name:'Plum',        card1:'#4a2a3f', card2:'#341d2d'},
+  {name:'Dark Gray',   card1:'#404040', card2:'#2a2a2a'},
+  {name:'Teal',        card1:'#2a3a46', card2:'#1f2a34'},
+  {name:'Brown',       card1:'#453a22', card2:'#352a18'},
+  {name:'Indigo',      card1:'#27334f', card2:'#1d2540'},
+  {name:'Blue',        card1:'#2a2f52', card2:'#202644'},
+];
+
+function buildPalettes(){
+  // Фон
+  bgPalette.innerHTML='';
+  BG_PRESETS.forEach((p)=>{
+    const b=document.createElement('button');
+    b.className='swatch';
+    b.title=p.name;
+    b.style.background=`linear-gradient(180deg, ${p.bg1}, ${p.bg0})`;
+    const isActive = state.theme.bg0===p.bg0 && state.theme.bg1===p.bg1;
+    b.setAttribute('aria-pressed', isActive ? 'true':'false');
+    b.addEventListener('click', ()=>{
+      state.theme.bg0=p.bg0; state.theme.bg1=p.bg1;
+      applyTheme(state.theme); saveState();
+      for(const x of bgPalette.querySelectorAll('.swatch')) x.setAttribute('aria-pressed','false');
+      b.setAttribute('aria-pressed','true');
+    });
+    bgPalette.appendChild(b);
+  });
+
+  // Карточки
+  cardPalette.innerHTML='';
+  CARD_PRESETS.forEach((p)=>{
+    const b=document.createElement('button');
+    b.className='swatch';
+    b.title=p.name;
+    b.style.background=`linear-gradient(180deg, ${p.card1}, ${p.card2})`;
+    const isActive = state.theme.card1===p.card1 && state.theme.card2===p.card2;
+    b.setAttribute('aria-pressed', isActive ? 'true':'false');
+    b.addEventListener('click', ()=>{
+      state.theme.card1=p.card1; state.theme.card2=p.card2;
+      applyTheme(state.theme); saveState();
+      for(const x of cardPalette.querySelectorAll('.swatch')) x.setAttribute('aria-pressed','false');
+      b.setAttribute('aria-pressed','true');
+    });
+    cardPalette.appendChild(b);
+  });
+}
 
   /** Quiz */
   function buildQuizPool(){ return state.cards.filter(c=>c.repeat===true||c.hard===true||c.box<=2); }
@@ -466,35 +559,6 @@ addCard('ten','diez',true);
     quizRestart.hidden=true; quizMeta.textContent=`вопрос ${q.index+1} из ${total}, правильных ${q.right}`;
   }
   quizRestart.addEventListener('click', startQuiz);
-
-  /** Export/Import */
-  btnExport.addEventListener('click', ()=>{
-    const rows=[['front','back','box','learned','repeat','hard','last','id']];
-    state.cards.forEach(c=>rows.push([c.front,c.back,c.box,c.learned,c.repeat,c.hard,c.last,c.id]));
-    const csv=toCSV(rows); const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob);
-    const a=document.createElement('a'); a.href=url; a.download='flashcards.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  });
-  fileImport.addEventListener('change', async (e)=>{
-    const file=e.target.files?.[0]; if(!file) return;
-    try{
-      const text=await file.text(); const name=(file.name||'').toLowerCase();
-      if(name.endsWith('.json') || text.trim().startsWith('[')){
-        const arr=JSON.parse(text); const added=[];
-        if(!Array.isArray(arr)) throw new Error('JSON должен быть массивом объектов или пар ([front,back]).');
-        for(const it of arr){
-          if(Array.isArray(it)&&it.length>=2){ addCard(String(it[0]),String(it[1])); added.push(it); continue; }
-          if(typeof it==='object' && it){ const f=it.front??it.en??it.EN??it[0]; const b=it.back??it.es??it.ES??it[1]; if(f!=null&&b!=null){ addCard(String(f),String(b)); added.push(it); } }
-        }
-        if(!added.length) throw new Error('Не удалось найти пары front/back в JSON.');
-      } else {
-        const rows=parseCSV(text); let added=0;
-        for(const r of rows){ const [f,b]=r; if((f??'').trim()&&(b??'').trim()){ addCard(String(f),String(b)); added++; } }
-        if(!added) throw new Error('CSV должен содержать строки вида "front","back".');
-      }
-      saveState(); refreshProgressUI(); renderList(); renderFlash(); alert('Импорт успешно завершён.');
-    } catch(err){ alert('Ошибка импорта: '+err.message+'\n\nПодсказка: CSV — "front","back"; JSON — массив объектов с полями front/back или en/es.'); }
-    finally{ e.target.value=''; }
-  });
 
   /** ---------- Autotranslate (online + offline >1000) ---------- */
   const LT_ENDPOINTS = [
@@ -733,7 +797,15 @@ addCard('ten','diez',true);
   btnRepeat.addEventListener('click', applyRepeat);
   tabFlash.addEventListener('click', ()=>switchTab('flash'));
   tabQuiz .addEventListener('click', ()=>switchTab('quiz'));
-  btnSettings.addEventListener('click', ()=>dlgSettings.showModal());
+  btnSettings.addEventListener('click', ()=>{
+  buildPalettes();                                  // палитры
+  if (settingsListWrap && elList && elList.parentElement !== settingsListWrap) {
+    settingsListWrap.appendChild(elList);           // ПЕРЕНОСИМ #list под кнопку в модалке
+  }
+  renderList();                                     // актуализируем содержимое
+  applyListVisibility();                            // уважаем флаг state.showList
+  dlgSettings.showModal();
+});
   btnAdd.addEventListener('click', ()=>{ dlgAdd.showModal(); setTimeout(()=> addFront.focus(),50); });
   addFront.addEventListener('input', scheduleAutoTranslate);
   addBack .addEventListener('input', scheduleAutoTranslate);
@@ -747,30 +819,53 @@ addCard('ten','diez',true);
     refreshProgressUI(); renderList(); renderFlash(); dlgAdd.close();
   });
   btnClearAdd.addEventListener('click', ()=>{ addFront.value=''; addBack.value=''; addFront.focus(); });
+btnAddClose?.addEventListener('click', () => {
+  dlgAdd.close();
+  btnAdd.focus(); // можно удалить, если фокус не нужен
+});
 
-  /** Init */
+    /** Init */
   function init(){
-    const loaded=loadState(); if(loaded) Object.assign(state, loaded);
+    const loaded = loadState();
+    if (loaded) Object.assign(state, loaded);
+
+    // Дефолтная тема при первом запуске (когда в localStorage ещё пусто)
+    if (!state.theme || (!state.theme.bg0 && !state.theme.card1)) {
+      state.theme = {
+        ...BG_PRESETS[0],   // { bg0, bg1 }
+        ...CARD_PRESETS[0]  // { card1, card2 }
+      };
+      applyTheme(state.theme);
+      saveState();
+    } else {
+      applyTheme(state.theme);
+    }
+
     ensureDemo();
-    elBtnDir.textContent=directionLabel();
-    renderFlash(); renderList(); refreshProgressUI();
+    elBtnDir.textContent = directionLabel();
+    renderFlash();
+    renderList();
+    refreshProgressUI();
     applyListVisibility();
-    switchTab(state.tab||'flash');
+    switchTab(state.tab || 'flash');
     flipCard(false);
+
     miniTests();
   }
   init();
 
   /** Mini tests */
   function miniTests(){
-    console.log('%cMini tests','background:#352b66;color:#fff;padding:2px 6px;border-radius:6px');
-    const t1=parseCSV('a,b'); console.log('CSV1 rows:',t1.length,t1);
-    const t2=parseCSV('"c,d",e'); console.log('CSV2 first cell:',t2[0][0]);
-    const t3=parseCSV('x\ty'); console.log('CSV3 split:',t3[0]);
-    const seedBefore=state.shuffleSeed; const weights=state.cards.map(c=>1/Math.max(1,c.box)); const pick1=weightedPick(weights,null,seedBefore); const seedAfter=state.shuffleSeed; console.log('Seed immutable:', seedBefore===seedAfter, {pick1,seedBefore,seedAfter});
-    const tmp=[{box:5,learned:false},{box:1,learned:true},{box:3}]; const learnedCount=tmp.filter(c=>c.learned||c.box>=4).length; console.log('Progress test (2):', learnedCount);
-    if(state.cards[0]){ const c={...state.cards[0]}; c.box=clamp(c.box+1,1,5); c.repeat=false; const w={...state.cards[0]}; w.repeat=true; w.box=1; console.log('Quiz mutations:',{correct:c.box,correctRepeat:c.repeat,wrongBox:w.box,wrongRepeat:w.repeat}); }
-  }
+  console.log('%cMini tests','background:#352b66;color:#fff;padding:2px 6px;border-radius:6px');
+  const seedBefore=state.shuffleSeed;
+  const weights=state.cards.map(c=>1/Math.max(1,c.box));
+  const pick1=weightedPick(weights,null,seedBefore);
+  const seedAfter=state.shuffleSeed;
+  console.log('Seed immutable:', seedBefore===seedAfter, {pick1,seedBefore,seedAfter});
+  const tmp=[{box:5,learned:false},{box:1,learned:true},{box:3}];
+  const learnedCount=tmp.filter(c=>c.learned||c.box>=4).length;
+  console.log('Progress test (2):', learnedCount);
+}
 })();
 </script>
 </body>
