@@ -146,6 +146,48 @@
 .swatch{width:28px;height:28px;border-radius:8px;border:none;cursor:pointer;box-shadow:var(--shadow-soft);
         outline:1px solid rgba(255,255,255,.08)}
 .swatch[aria-pressed="true"]{outline:2px solid #8c7aff}
+
+/* iOS-like switch */
+.ios-switch {
+  display:inline-flex; align-items:center; gap:.7rem;
+  cursor:pointer; user-select:none;
+}
+.ios-switch input {
+  position:absolute; opacity:0; width:0; height:0; /* скрыт, но доступен */
+}
+.ios-switch .track {
+  --w: 48px; --h: 28px; --pad: 3px;
+  position:relative; width:var(--w); height:var(--h);
+  background:#9aa0a6; border-radius:var(--h);
+  transition: background .22s var(--ease, cubic-bezier(.22,.61,.36,1)), box-shadow .22s;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
+}
+.ios-switch .thumb {
+  position:absolute; top: var(--pad); left: var(--pad);
+  width: calc(var(--h) - var(--pad)*2); height: calc(var(--h) - var(--pad)*2);
+  background:#fff; border-radius:50%;
+  box-shadow: 0 3px 10px rgba(0,0,0,.25), 0 2px 4px rgba(0,0,0,.18);
+  transition: transform .22s var(--ease, cubic-bezier(.22,.61,.36,1));
+}
+
+/* Checked */
+.ios-switch input:checked + .track { background:#34c759; }   /* iOS green */
+.ios-switch input:checked + .track .thumb {
+  transform: translateX(calc(var(--w) - var(--h)));
+}
+
+/* Focus (клавиатура) */
+.ios-switch input:focus-visible + .track {
+  outline:2px solid #1b73e8; outline-offset:3px;
+}
+
+/* Disabled (если пригодится) */
+.ios-switch input:disabled + .track { filter:grayscale(.4) brightness(.95); }
+.ios-switch input:disabled ~ .switch-text { opacity:.6; }
+
+/* Текст справа */
+.ios-switch .switch-text { opacity:.9; }
+
 </style>
 </head>
 <body>
@@ -241,10 +283,11 @@
     <div class="row"><input id="addBack"  placeholder="Back (ES)"  autocomplete="off" /></div>
 
     <div class="row" style="justify-content:space-between;width:100%">
-      <label style="display:flex;align-items:center;gap:8px;">
-        <input type="checkbox" id="autoTranslate" checked />
-        <span>Автоперевод</span>
-      </label>
+      <label class="ios-switch">
+  <input type="checkbox" id="autoTranslate" checked />
+  <span class="track"><span class="thumb"></span></span>
+  <span class="switch-text">Автоперевод</span>
+</label>
       <div class="meta" id="trStatus"><span class="spinner" aria-live="polite"></span></div>
     </div>
 
@@ -863,7 +906,12 @@ function repaintQuizCurrent(){
   const SMALL_DICT_ES2EN = Object.fromEntries(Object.entries(SMALL_DICT_EN2ES).map(([k,v])=>[v,k]));
 
   async function translateOnline(q, dir, signal){
-    const payload = { q, source: dir==='EN2ES'?'en':'es', target: dir==='EN2ES'?'es':'en', format:'text' };
+    const payload = {
+  q: text,
+  source: 'auto',
+  target: dir === 'EN2ES' ? 'es' : 'en',
+  format: 'text'
+};
     for(const url of LT_ENDPOINTS){
       try{
         const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), signal });
@@ -907,9 +955,16 @@ function repaintQuizCurrent(){
     const back  = addBack.value.trim();
     let fromEl, toEl, dir;
 
-    if(front && !back){ dir='EN2ES'; fromEl=addFront; toEl=addBack; }
-    else if(back && !front){ dir='ES2EN'; fromEl=addBack; toEl=addFront; }
-    else return;
+    if (front && !back) {
+  dir = 'EN2ES'; fromEl = addFront; toEl = addBack;
+} else if (back && !front) {
+  dir = 'ES2EN'; fromEl = addBack; toEl = addFront;
+} else {
+  // оба поля есть — ориентируемся по фокусу, по умолчанию front→back
+  const ae = document.activeElement;
+  if (ae === addBack) { dir = 'ES2EN'; fromEl = addBack; toEl = addFront; }
+  else                { dir = 'EN2ES'; fromEl = addFront; toEl = addBack; }
+}
 
     setTrStatus('Перевод…');
     btnTranslate.disabled = true;
@@ -979,8 +1034,17 @@ function repaintQuizCurrent(){
 }
 
   addFront.addEventListener('input', scheduleAutoTranslate);
-  addBack .addEventListener('input', scheduleAutoTranslate);
-  btnTranslate.addEventListener('click', doTranslateActive);
+addBack .addEventListener('input', scheduleAutoTranslate);
+btnTranslate.addEventListener('click', doTranslateActive);
+
+// ➕ реагируем на включение/выключение автоперевода
+autoTranslate.addEventListener('change', () => {
+  setTrStatus(autoTranslate.checked ? 'Автоперевод вкл' : 'Автоперевод выкл');
+  if (autoTranslate.checked) {
+    // если в одном из полей уже есть текст — запустим перевод сразу
+    scheduleAutoTranslate();
+  }
+});
 
     // Диалог "Новая карточка" — обработчики
 btnClearAdd.addEventListener('click', () => {
@@ -1016,16 +1080,14 @@ addForm.addEventListener('submit', (ev) => {
 if (!Array.isArray(state.history)) state.history = [];
 
     // Дефолтная тема при первом запуске (когда в localStorage ещё пусто)
-    if (!state.theme || (!state.theme.bg0 && !state.theme.card1)) {
-      state.theme = {
-        ...BG_PRESETS[0],   // { bg0, bg1 }
-        ...CARD_PRESETS[0]  // { card1, card2 }
-      };
-      applyTheme(state.theme);
-      saveState();
-    } else {
-      applyTheme(state.theme);
-    }
+    // Init()
+if (!state.theme || (!state.theme.bg0 && !state.theme.card1)) {
+  state.theme = { ...BG_PRESETS[0], ...CARD_PRESETS[0] };
+  applyTheme(state.theme);
+  saveState();
+} else {
+  applyTheme(state.theme);
+}
 
     ensureDemo();
     elBtnDir.textContent = directionLabel();
