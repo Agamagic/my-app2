@@ -834,7 +834,11 @@ function buildPalettes(){
   applyListVisibility();                            // уважаем флаг state.showList
   dlgSettings.showModal();
 });
-  btnAdd.addEventListener('click', ()=>{ dlgAdd.showModal(); setTimeout(()=> addFront.focus(),50); });
+  btnAdd.addEventListener('click', () => {
+  document.activeElement?.blur?.();
+  dlgAdd.showModal();                    // просто открыть диалог, без автофокуса
+});
+
   addFront.addEventListener('input', scheduleAutoTranslate);
   addBack .addEventListener('input', scheduleAutoTranslate);
   btnTranslate.addEventListener('click', doTranslateActive);
