@@ -78,25 +78,40 @@
   .modal h3{margin:0 0 10px}
   .modal .row{margin-top:10px}
   .modal input{width:100%;appearance:none;border:none;border-radius:12px;padding:10px 12px;background:#231e46;color:var(--text);outline:none}
-  .modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
-  /* Кнопки в диалоге "Новая карточка" */
+  /* не трогаем actions внутри #dlgAdd */
+.modal .actions:not(.actions-add){
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  margin-top:12px;
+}
+
+  /* Кнопки в диалоге "Новая карточка" — мобильный вид (2 колонки) */
 .actions-add{
   display:grid;
-  grid-template-columns: 1fr 1fr; /* телефон: сетка 2 x N */
+  grid-template-columns: 1fr 1fr;
   gap:10px;
+  /* важно: переопределяем то, что задаёт .modal .actions */
+  justify-content: unset;
+  align-content: start;
 }
-.actions-add .chip{ width:100%; }
+.actions-add .chip{
+  width:100%;
+  min-width:0;          /* Safari iOS: позволяем кнопке сжиматься внутри грида */
+}
 
-/* Десктоп: одна строка */
-@media (min-width: 680px){
-  #dlgAdd .modal{ min-width:560px; }      /* шире модалка только для этого диалога */
+/* Десктоп: в одну строку */
+@media (min-width:680px){
+  #dlgAdd .modal{ min-width:560px; }
   .actions-add{
     display:flex;
     flex-wrap:nowrap;
+    gap:10px;
     justify-content:space-between;
   }
   .actions-add .chip{ width:auto; }
 }
+
   .footnote{margin-top:10px;color:var(--muted);font-size:12px}
   .linklike{color:#9ea0ff;text-decoration:underline;cursor:pointer}
   :focus-visible{outline:2px solid #8c7aff;outline-offset:2px;border-radius:10px}
@@ -215,7 +230,6 @@
 
     <!-- ЕДИНЫЙ блок кнопок -->
     <div class="actions actions-add">
-      <button class="chip" type="button" id="btnSwap">⇄ Поменять поля</button>
       <button class="chip" type="button" id="btnTranslate">Перевести</button>
       <button class="chip" type="button" id="btnClearAdd">Очистить</button>
       <button class="chip" type="submit" id="btnAddConfirm">Добавить</button>
@@ -274,7 +288,7 @@ const settingsListWrap = $('#settingsListWrap');
   const btnClearAdd=$('#btnClearAdd');
   const btnAddClose = $('#btnAddClose');
   const quizMeta=$('#quizMeta'), quizPrompt=$('#quizPrompt'), quizOpts=$('#quizOpts'), quizRestart=$('#quizRestart');
-  const autoTranslate=$('#autoTranslate'), btnTranslate=$('#btnTranslate'), btnSwap=$('#btnSwap'), trStatus=$('#trStatus');
+  const autoTranslate=$('#autoTranslate'), btnTranslate=$('#btnTranslate'), trStatus=$('#trStatus');
   const bgPalette=$('#bgPalette'), cardPalette=$('#cardPalette');
  
   /** ---------- App ---------- */
@@ -824,7 +838,6 @@ function buildPalettes(){
   addFront.addEventListener('input', scheduleAutoTranslate);
   addBack .addEventListener('input', scheduleAutoTranslate);
   btnTranslate.addEventListener('click', doTranslateActive);
-  btnSwap.addEventListener('click', ()=>{ const f=addFront.value; addFront.value=addBack.value; addBack.value=f; });
 
   addForm.addEventListener('submit', (ev)=>{
     ev.preventDefault();
