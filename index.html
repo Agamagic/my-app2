@@ -213,7 +213,7 @@
 </dialog>
 
 <!-- ADD MODAL -->
-<dialog id="dlgAdd" aria-label="Добавить карточку">
+<dialog id="dlgAdd" aria-label="Добавить карточку" tabindex="-1">
   <form method="dialog" class="modal" id="addForm">
     <h3>Новая карточка</h3>
 
@@ -233,7 +233,7 @@
       <button class="chip" type="button" id="btnTranslate">Перевести</button>
       <button class="chip" type="button" id="btnClearAdd">Очистить</button>
       <button class="chip" type="submit" id="btnAddConfirm">Добавить</button>
-      <button class="chip" type="button" id="btnAddClose">Закрыть</button>
+      <button class="chip" type="button" id="btnAddClose" autofocus>Закрыть</button>
     </div>
 
     <div class="footnote">Онлайн-перевод через LibreTranslate. Если сети нет — офлайн шаблоны (&gt;1000 типовых фраз) и мини-словарь.</div>
@@ -835,8 +835,9 @@ function buildPalettes(){
   dlgSettings.showModal();
 });
   btnAdd.addEventListener('click', () => {
-  document.activeElement?.blur?.();
-  dlgAdd.showModal();                    // просто открыть диалог, без автофокуса
+  document.activeElement?.blur?.();          // гасим возможный текущий фокус
+  dlgAdd.showModal();                         // просто открыть
+  dlgAdd.focus({preventScroll:true});         // фокус на диалог, не на input
 });
 
   addFront.addEventListener('input', scheduleAutoTranslate);
