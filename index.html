@@ -146,6 +146,10 @@
       <button type="button" class="chip" id="btnExport">Экспорт CSV</button>
       <label class="chip" for="fileImport" style="cursor:pointer">Импорт (CSV/JSON)</label>
       <input id="fileImport" type="file" accept=".csv,.json,text/csv,application/json" hidden />
+      <button type="button" class="chip" id="btnReset"
+  onclick="localStorage.removeItem('minimal-flashcards-html-v1'); location.reload();">
+  Сброс данных
+</button>
     </div>
     <div class="footnote">Импорт добавит карточки в начало. При ошибке форматирования появится подсказка.</div>
     <div class="actions"><button class="chip" value="cancel">Закрыть</button></div>
@@ -758,6 +762,7 @@ addCard('Could you bring a cup, please?','¿Podría traer una taza, por favor?',
 </script>
 </body>
 </html>
+
 
 
 
