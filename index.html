@@ -32,6 +32,31 @@
   .tabbar{display:flex;background:#1f1a3a;border-radius:12px;padding:4px;gap:4px;box-shadow:var(--shadow-soft)}
   .tabbar button{flex:1;appearance:none;border:none;background:transparent;color:var(--muted);padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600;transition:background .2s var(--ease), color .2s var(--ease)}
   .tabbar button.active{background:linear-gradient(180deg,#2a2452,#221d44);color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+  /* Табы — чуть компактнее по паддингам */
+.tabbar .tab{ padding:8px 12px; }
+.tabbar .dirbtn{
+  flex:0 0 auto;
+  padding:6px 10px;
+  margin:0 4px;
+  font-size:13px;       
+}
+
+/* Кнопка EN→ES по центру — узкая, не растягивается */
+.tabbar .dirbtn{
+  flex:0 0 auto;           /* не растягивать как табы */
+  padding:6px 10px;        /* уже и компактнее */
+  margin:0 4px;
+  background:#251f44;
+  color:var(--text);
+  border-radius:10px;
+  font-weight:700;
+  box-shadow:var(--shadow-soft);
+  border:none;
+  cursor:pointer;
+  transition:transform .12s var(--ease), opacity .2s var(--ease);
+}
+.tabbar .dirbtn:active{ transform:scale(.95) }
+
   .cardwrap{margin-top:14px}
   .card3d{position:relative;height:min(64vh,360px);aspect-ratio:3/4;margin:0 auto;border-radius:var(--radius);perspective:1200px;overflow:visible}
   .card{position:absolute;inset:0;border-radius:var(--radius);transform-style:preserve-3d;transition:transform .6s var(--ease)}
@@ -48,8 +73,7 @@
   .row{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
   .chip{appearance:none;border:none;background:#251f44;color:var(--text);padding:10px 12px;border-radius:999px;cursor:pointer;box-shadow:var(--shadow-soft);font-size:14px}
   .chip:active{transform:scale(.95)}
-  .search{flex:1;display:flex;background:#201a3e;border-radius:12px;box-shadow:var(--shadow-soft);padding:8px 10px;gap:8px}
-  .search input{flex:1;appearance:none;background:transparent;border:none;color:var(--text);outline:none;font-size:14px}
+  
   .listwrap{margin-top:8px}
   .list{background:#1a1534;border-radius:12px;overflow:hidden;box-shadow:var(--shadow-soft)}
   details{border-top:1px solid rgba(255,255,255,.06)} details:first-child{border-top:none}
@@ -127,17 +151,21 @@
 <body>
 <div class="wrap" id="app" aria-live="polite">
   <header>
-    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Прогресс обучения"><span id="progressFill"></span></div>
-    <div class="meta" id="progressText">Прогресс: 0% (0/0) | Повторить: 0</div>
-    <div class="tabs" role="tablist" aria-label="Навигация вкладок">
-      <button class="iconbtn" id="btnSettings" title="Настройки" aria-label="Настройки">⚙️</button>
-      <div class="tabbar">
-        <button role="tab" aria-selected="true" id="tabFlash" class="active">Flashcards</button>
-        <button role="tab" aria-selected="false" id="tabQuiz">Квиз</button>
-      </div>
-      <button class="iconbtn" id="btnAdd" title="Добавить карточку" aria-label="Добавить">＋</button>
+  <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Прогресс обучения"><span id="progressFill"></span></div>
+  <div class="meta" id="progressText">Прогресс: 0% (0/0) | Повторить: 0</div>
+
+  <div class="tabs" role="tablist" aria-label="Навигация вкладок">
+    <button class="iconbtn" id="btnSettings" title="Настройки" aria-label="Настройки">⚙️</button>
+
+    <div class="tabbar">
+      <button role="tab" aria-selected="true" id="tabFlash" class="tab active">Flashcards</button>
+      <button class="dirbtn" id="btnDirection" type="button" title="Сменить направление">EN→ES</button>
+      <button role="tab" aria-selected="false" id="tabQuiz" class="tab">Квиз</button>
     </div>
-  </header>
+
+    <button class="iconbtn" id="btnAdd" title="Добавить карточку" aria-label="Добавить">＋</button>
+  </div>
+</header>
 
   <!-- FLASHCARDS -->
   <section id="viewFlash">
@@ -161,15 +189,7 @@
 
     <div class="row"><div id="counters" class="meta">Всего: 0 • Выучено: 0 • Повторить: 0</div></div>
 
-    <div class="row">
-      <div class="search" aria-label="Поиск">
-        <input id="searchInput" type="search" placeholder="Поиск по карточкам…" enterkeyhint="search" />
-      </div>
-      <button class="chip" id="btnDirection">EN→ES</button>
-      <button class="chip" id="btnShuffle">Перемешать</button>
-          </div>
-
-    <div class="listwrap" id="mainListWrap" hidden>
+        <div class="listwrap" id="mainListWrap" hidden>
   <div class="list" id="list"></div>
 </div>
   </section>
@@ -266,9 +286,11 @@ const state = {
   direction: 'EN2ES',
   tab: 'flash',
   shuffleSeed: 1.2345,
-  showList: true,
+  showList: false,
 
-  // ← новое: состояние темы
+  // стек истории показа карточек (для «назад»)
+  history: [],
+
   theme: { bg0:'', bg1:'', card1:'', card2:'' },
 
   quiz: { pool:[], index:0, right:0, finished:false, lastAnswer:null }
@@ -279,7 +301,7 @@ const state = {
   const elFront=$('#frontText'), elBack=$('#backText'), elCard=$('#card'), elList=$('#list');
 const mainListWrap = $('#mainListWrap');
 const settingsListWrap = $('#settingsListWrap');
-  const elSearch=$('#searchInput'), elBtnDir=$('#btnDirection'), elBtnShuffle=$('#btnShuffle'), btnToggleList=$('#btnToggleList');
+const elBtnDir=$('#btnDirection'), btnToggleList=$('#btnToggleList');
   const elZoneBack=$('#zoneBack'), elZoneFlip=$('#zoneFlip'), elZoneNext=$('#zoneNext');
   const btnLearned=$('#btnLearned'), btnRepeat=$('#btnRepeat');
   const tabFlash=$('#tabFlash'), tabQuiz=$('#tabQuiz'), viewFlash=$('#viewFlash'), viewQuiz=$('#viewQuiz');
@@ -410,9 +432,12 @@ addCard('ten','diez',true);
   function renderFlash(){ const c=currentCard(); if(!c){ elFront.textContent='Нет карточек'; elBack.textContent='Добавьте новые через ＋'; return;} setCardTexts(c); }
 
   function renderList(){
-    const q=(elSearch.value||'').trim().toLowerCase();
-    const items=state.cards.filter(c => !q || c.front.toLowerCase().includes(q) || c.back.toLowerCase().includes(q));
-    if(!items.length){ elList.innerHTML=`<div style="padding:14px;color:var(--muted)">Ничего не найдено</div>`; return; }
+  const items = state.cards;
+  if(!items.length){
+    elList.innerHTML = `<div style="padding:14px;color:var(--muted)">Пока нет карточек</div>`;
+    return;
+  }
+
     elList.innerHTML = items.map(c=>{
       const status = c.learned? '✔ выучено' : (c.repeat||c.hard||c.box<=2)? '↺ повторить' : 'в процессе';
       return `<details data-id="${c.id}">
@@ -440,16 +465,39 @@ addCard('ten','diez',true);
   function applyLearned(){ const c=currentCard(); if(!c)return; c.learned=true;c.repeat=false;c.hard=false;c.box=clamp(c.box+1,1,5);c.last=now(); nextCard(true); saveState(); refreshProgressUI(); renderList(); }
   function applyRepeat(){ const c=currentCard(); if(!c)return; c.repeat=true;c.hard=true;c.learned=false;c.box=Math.min(c.box,2);c.last=now(); nextCard(false); saveState(); refreshProgressUI(); renderList(); }
   function directionLabel(){ return state.direction==='EN2ES'?'EN→ES':'ES→EN'; }
-  function nextCard(){ flipCard(false); if(state.cards.length<=1) return;
-    const currentIndex=state.cards.findIndex(c=>c.id===state.currentId);
-    const weights=state.cards.map(c=>1/Math.max(1,c.box));
-    state.shuffleSeed += .517;
-    const pick=weightedPick(weights,currentIndex,state.shuffleSeed);
-    if(pick>=0){ state.currentId=state.cards[pick].id; setCardTexts(state.cards[pick]); }
-    saveState();
+  function nextCard(){
+  flipCard(false);
+  if (state.cards.length <= 1) return;
+
+  const currentIndex = state.cards.findIndex(c => c.id === state.currentId);
+  const weights = state.cards.map(c => 1 / Math.max(1, c.box));
+  state.shuffleSeed += .517;
+  const pick = weightedPick(weights, currentIndex, state.shuffleSeed);
+
+  if (pick >= 0) {
+    // запоминаем текущую карточку в историю
+    if (state.currentId) {
+      state.history.push(state.currentId);
+      // чтобы не разрасталась бесконечно
+      if (state.history.length > 200) state.history.shift();
+    }
+    state.currentId = state.cards[pick].id;
+    setCardTexts(state.cards[pick]);
   }
-  function prevCard(){ if(!state.cards.length) return; const idx=state.cards.findIndex(c=>c.id===state.currentId);
-    const prev=(idx-1+state.cards.length)%state.cards.length; state.currentId=state.cards[prev].id; flipCard(false); renderFlash(); saveState(); }
+  saveState();
+}
+
+function prevCard(){
+  // идём назад строго по истории показов
+  if (!state.history || state.history.length === 0) return;
+  const prevId = state.history.pop();
+  if (!prevId) return;
+
+  state.currentId = prevId;
+  flipCard(false);
+  renderFlash();
+  saveState();
+}
 
   /** List toggle (single button) */
   function applyListVisibility(){
@@ -462,7 +510,6 @@ addCard('ten','diez',true);
 
   /** Direction & shuffle */
   elBtnDir.addEventListener('click', ()=>{ state.direction=state.direction==='EN2ES'?'ES2EN':'EN2ES'; elBtnDir.textContent=directionLabel(); const c=currentCard(); if(c) setCardTexts(c); saveState(); });
-  elBtnShuffle.addEventListener('click', ()=>{ state.shuffleSeed += 1; saveState(); });
 
   /** List actions */
   elList.addEventListener('click',(e)=>{
@@ -470,7 +517,13 @@ addCard('ten','diez',true);
     const details=e.target.closest('details'); if(!details) return;
     const id=details.getAttribute('data-id'); const card=state.cards.find(c=>c.id===id); if(!card) return;
     const act=btn.getAttribute('data-act');
-    if(act==='focus'){ state.currentId=id; renderFlash(); details.open=false; }
+    if (act === 'focus') {
+  if (state.currentId) state.history.push(state.currentId);
+  state.currentId = id;
+  renderFlash();
+  details.open = false;
+  saveState();
+}
     if(act==='markLearned'){ card.learned=true; card.repeat=false; card.hard=false; card.box=clamp(card.box+1,1,5); }
     if(act==='markRepeat'){ card.repeat=true; card.hard=true; card.learned=false; card.box=Math.min(card.box,2); }
     if(act==='boxUp'){ card.box=clamp(card.box+1,1,5); }
@@ -828,29 +881,30 @@ function buildPalettes(){
   btnSettings.addEventListener('click', ()=>{
   buildPalettes();                                  // палитры
   if (settingsListWrap && elList && elList.parentElement !== settingsListWrap) {
-    settingsListWrap.appendChild(elList);           // ПЕРЕНОСИМ #list под кнопку в модалке
+    settingsListWrap.appendChild(elList);           // переносим #list в модалку
   }
-  renderList();                                     // актуализируем содержимое
-  applyListVisibility();                            // уважаем флаг state.showList
+  renderList();
+
+  // ❗ Открываем настройки с закрытым списком
+  state.showList = false;
+  applyListVisibility();
+
   dlgSettings.showModal();
 });
+
+  if (btnAdd) {
   btnAdd.addEventListener('click', () => {
-  document.activeElement?.blur?.();          // гасим возможный текущий фокус
-  dlgAdd.showModal();                         // просто открыть
-  dlgAdd.focus({preventScroll:true});         // фокус на диалог, не на input
-});
+    document.activeElement?.blur?.();        // гасим возможный фокус
+    dlgAdd.showModal();                       // открыть диалог
+    dlgAdd.focus({ preventScroll: true });    // фокус на диалог
+  });
+}
 
   addFront.addEventListener('input', scheduleAutoTranslate);
   addBack .addEventListener('input', scheduleAutoTranslate);
   btnTranslate.addEventListener('click', doTranslateActive);
 
-  addForm.addEventListener('submit', (ev)=>{
-    ev.preventDefault();
-    const f=addFront.value.trim(), b=addBack.value.trim(); if(!f||!b) return;
-    addCard(f,b); addFront.value=''; addBack.value='';
-    refreshProgressUI(); renderList(); renderFlash(); dlgAdd.close();
-  });
-  // Диалог "Новая карточка" — обработчики
+    // Диалог "Новая карточка" — обработчики
 btnClearAdd.addEventListener('click', () => {
   addFront.value = '';
   addBack.value  = '';
@@ -881,6 +935,7 @@ addForm.addEventListener('submit', (ev) => {
   function init(){
     const loaded = loadState();
     if (loaded) Object.assign(state, loaded);
+if (!Array.isArray(state.history)) state.history = [];
 
     // Дефолтная тема при первом запуске (когда в localStorage ещё пусто)
     if (!state.theme || (!state.theme.bg0 && !state.theme.card1)) {
