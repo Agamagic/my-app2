@@ -79,6 +79,24 @@
   .modal .row{margin-top:10px}
   .modal input{width:100%;appearance:none;border:none;border-radius:12px;padding:10px 12px;background:#231e46;color:var(--text);outline:none}
   .modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+  /* Кнопки в диалоге "Новая карточка" */
+.actions-add{
+  display:grid;
+  grid-template-columns: 1fr 1fr; /* телефон: сетка 2 x N */
+  gap:10px;
+}
+.actions-add .chip{ width:100%; }
+
+/* Десктоп: одна строка */
+@media (min-width: 680px){
+  #dlgAdd .modal{ min-width:560px; }      /* шире модалка только для этого диалога */
+  .actions-add{
+    display:flex;
+    flex-wrap:nowrap;
+    justify-content:space-between;
+  }
+  .actions-add .chip{ width:auto; }
+}
   .footnote{margin-top:10px;color:var(--muted);font-size:12px}
   .linklike{color:#9ea0ff;text-decoration:underline;cursor:pointer}
   :focus-visible{outline:2px solid #8c7aff;outline-offset:2px;border-radius:10px}
@@ -183,8 +201,10 @@
 <dialog id="dlgAdd" aria-label="Добавить карточку">
   <form method="dialog" class="modal" id="addForm">
     <h3>Новая карточка</h3>
+
     <div class="row"><input id="addFront" placeholder="Front (EN)" autocomplete="off" /></div>
-    <div class="row"><input id="addBack" placeholder="Back (ES)" autocomplete="off" /></div>
+    <div class="row"><input id="addBack"  placeholder="Back (ES)"  autocomplete="off" /></div>
+
     <div class="row" style="justify-content:space-between;width:100%">
       <label style="display:flex;align-items:center;gap:8px;">
         <input type="checkbox" id="autoTranslate" checked />
@@ -192,23 +212,17 @@
       </label>
       <div class="meta" id="trStatus"><span class="spinner" aria-live="polite"></span></div>
     </div>
-    <div class="actions" style="justify-content:space-between">
-  <div class="row" style="margin:0">
-    <button class="chip" type="button" id="btnSwap">⇄ Поменять поля</button>
-    <button class="chip" type="button" id="btnTranslate">Перевести</button>
-  </div>
-  <div class="row" style="margin:0">
-    <button class="chip" id="btnClearAdd" type="button">Очистить</button>
-    <button class="chip" id="btnAddConfirm" type="submit">Добавить</button>
-  </div>
-</div>
 
-<!-- Отдельный блок только для закрытия -->
-<div class="actions" style="justify-content:flex-end">
-  <button class="chip" type="button" id="btnAddClose">Закрыть</button>
-</div>
+    <!-- ЕДИНЫЙ блок кнопок -->
+    <div class="actions actions-add">
+      <button class="chip" type="button" id="btnSwap">⇄ Поменять поля</button>
+      <button class="chip" type="button" id="btnTranslate">Перевести</button>
+      <button class="chip" type="button" id="btnClearAdd">Очистить</button>
+      <button class="chip" type="submit" id="btnAddConfirm">Добавить</button>
+      <button class="chip" type="button" id="btnAddClose">Закрыть</button>
+    </div>
 
-    <div class="footnote">Онлайн-перевод через LibreTranslate. Если сети нет — офлайн шаблоны (>1000 типовых фраз) и мини-словарь.</div>
+    <div class="footnote">Онлайн-перевод через LibreTranslate. Если сети нет — офлайн шаблоны (&gt;1000 типовых фраз) и мини-словарь.</div>
   </form>
 </dialog>
 
@@ -818,10 +832,31 @@ function buildPalettes(){
     addCard(f,b); addFront.value=''; addBack.value='';
     refreshProgressUI(); renderList(); renderFlash(); dlgAdd.close();
   });
-  btnClearAdd.addEventListener('click', ()=>{ addFront.value=''; addBack.value=''; addFront.focus(); });
-btnAddClose?.addEventListener('click', () => {
+  // Диалог "Новая карточка" — обработчики
+btnClearAdd.addEventListener('click', () => {
+  addFront.value = '';
+  addBack.value  = '';
+  addFront.focus();
+});
+
+btnAddClose.addEventListener('click', () => {
   dlgAdd.close();
-  btnAdd.focus(); // можно удалить, если фокус не нужен
+  btnAdd.focus(); // можно удалить, если не нужен возврат фокуса на "＋"
+});
+
+addForm.addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const f = addFront.value.trim();
+  const b = addBack.value.trim();
+  if (!f || !b) return;
+
+  addCard(f, b);
+  addFront.value = '';
+  addBack.value  = '';
+  refreshProgressUI();
+  renderList();
+  renderFlash();
+  dlgAdd.close();
 });
 
     /** Init */
