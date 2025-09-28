@@ -2,1277 +2,371 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Flashcards EN↔ES — One File</title>
-<link rel="icon" href="favicon.png" type="image/png" sizes="32x32">
-<link rel="apple-touch-icon" href="favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Calculator</title>
+<meta name="theme-color" content="#000000">
+
+<!-- iOS: полноэкранный запуск без адресной строки -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Calculator">
+
 <style>
   :root{
-    --bg0:#0b0a12; --bg1:#141126; --grad1:#5b3ee4; --grad2:#a25bff;
-    --text:#f6f5ff; --muted:#c6c2df; --green:#25a46a; --blue:#2b74ff; --red:#ff4d6d;
-    --card:#1b1733; --shadow: 0 10px 30px rgba(0,0,0,.35), 0 6px 18px rgba(42,22,87,.25);
-    --radius:18px; --ease:cubic-bezier(.22,.61,.36,1); --shadow-soft: 0 8px 20px rgba(90,64,200,.25);
+    --bg:#000;           /* общий фон */
+    --fg:#fff;           /* текст на дисплее */
+    --btn:#2a2a2a;       /* обычные кнопки */
+    --btn2:#5c5c5e;      /* серые спец-кнопки (AC, ±, %) */
+    --op:#f69a06;        /* оранжевые операторы */
+    --btnText:#fff;
+    --muted:#c8c8c8;
+    --radius:44px;       /* радиус кружков */
   }
-  *{box-sizing:border-box} html,body{height:100%}
-  body{
-    margin:0;color:var(--text);
-    background: radial-gradient(1200px 600px at 20% -10%, rgba(162,91,255,.25), transparent 60%),
-               radial-gradient(1000px 700px at 120% 10%, rgba(91,62,228,.25), transparent 60%),
-               linear-gradient(180deg, var(--bg1), var(--bg0));
-    font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:var(--bg);margin:0;padding:0;overflow:hidden;}
+  body{font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+       touch-action: manipulation;}
+  .app{
+    position:fixed; inset:0;
+    padding: calc(env(safe-area-inset-top,0) + 8px) 12px calc(env(safe-area-inset-bottom,0) + 12px);
+    display:flex; flex-direction:column; gap:12px;
   }
-  .wrap{max-width:460px;margin:0 auto;padding:16px 16px calc(env(safe-area-inset-bottom) + 20px)}
-  header{position:sticky;top:0;z-index:5;background:linear-gradient(180deg, rgba(20,17,38,.9), rgba(20,17,38,.6), transparent);backdrop-filter:saturate(1.1) blur(6px);margin:0 -16px 10px;padding:10px 16px 6px}
-  .bar{height:8px;background:#2a2446;border-radius:999px;overflow:hidden;box-shadow:var(--shadow-soft);margin-bottom:10px}
-  .bar>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--grad1),var(--grad2));transition:width .3s var(--ease)}
-  .meta{font-size:13px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
-  .tabs{display:grid;grid-template-columns:auto 1fr auto;align-items:center;margin-top:10px;gap:8px}
-  .iconbtn{appearance:none;border:none;background:#251f44;color:var(--text);padding:10px 12px;border-radius:12px;box-shadow:var(--shadow-soft);cursor:pointer;transition:transform .15s var(--ease), opacity .15s var(--ease)}
-  .iconbtn:active{transform:scale(.95)}
-  .tabbar{display:flex;background:#1f1a3a;border-radius:12px;padding:4px;gap:4px;box-shadow:var(--shadow-soft)}
-  .tabbar button{flex:1;appearance:none;border:none;background:transparent;color:var(--muted);padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600;transition:background .2s var(--ease), color .2s var(--ease)}
-  .tabbar button.active{background:linear-gradient(180deg,#2a2452,#221d44);color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
-  /* Табы — чуть компактнее по паддингам */
-.tabbar .tab{ padding:8px 12px; }
-.tabbar .dirbtn{
-  flex:0 0 auto;
-  padding:6px 10px;
-  margin:0 4px;
-  font-size:13px;       
-}
-
-/* Кнопка EN→ES по центру — узкая, не растягивается */
-.tabbar .dirbtn{
-  flex:0 0 auto;           /* не растягивать как табы */
-  padding:6px 10px;        /* уже и компактнее */
-  margin:0 4px;
-  background:#251f44;
-  color:var(--text);
-  border-radius:10px;
-  font-weight:700;
-  box-shadow:var(--shadow-soft);
-  border:none;
-  cursor:pointer;
-  transition:transform .12s var(--ease), opacity .2s var(--ease);
-}
-.tabbar .dirbtn:active{ transform:scale(.95) }
-
-  .cardwrap{margin-top:14px}
-  .card3d{position:relative;height:min(64vh,360px);aspect-ratio:3/4;margin:0 auto;border-radius:var(--radius);perspective:1200px;overflow:visible}
-  .card{position:absolute;inset:0;border-radius:var(--radius);transform-style:preserve-3d;transition:transform .6s var(--ease)}
-  .face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(20px,4.8vw,26px);padding:18px;text-align:center;border-radius:var(--radius);background:linear-gradient(180deg,var(--cardGrad1,#2a2452),var(--cardGrad2,#211c40));box-shadow:var(--shadow);backface-visibility:hidden}
-  .back{transform:rotateY(180deg)}
-  .zones{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr 1fr;border-radius:var(--radius);overflow:hidden}
-  .zones button{appearance:none;background:transparent;border:none}
-  .zones button:active{background:rgba(255,255,255,.06)}
-  .controls{display:flex;gap:10px;margin-top:14px}
-  .btn{flex:1;appearance:none;border:none;border-radius:14px;padding:14px 16px;font-size:16px;font-weight:700;cursor:pointer;transition:transform .12s var(--ease), filter .2s var(--ease), opacity .2s var(--ease);box-shadow:var(--shadow-soft)}
-  .btn:active{transform:scale(.95)}
-  .btn.green{background:linear-gradient(180deg,#1e9a66,#148c5c)}
-  .btn.blue{background:linear-gradient(180deg,#3b7bff,#2d68e8)}
-  .row{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
-  .chip{appearance:none;border:none;background:#251f44;color:var(--text);padding:10px 12px;border-radius:999px;cursor:pointer;box-shadow:var(--shadow-soft);font-size:14px}
-  .chip:active{transform:scale(.95)}
-  
-  .listwrap{margin-top:8px}
-  .list{background:#1a1534;border-radius:12px;overflow:hidden;box-shadow:var(--shadow-soft)}
-  details{border-top:1px solid rgba(255,255,255,.06)} details:first-child{border-top:none}
-  summary{list-style:none;padding:12px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
-  summary::-webkit-details-marker{display:none}
-  .status{font-size:12px;color:var(--muted)} .pill{padding:4px 8px;border-radius:999px;background:#2a2446;margin-left:8px;font-size:12px}
-  .quiz{margin-top:12px;background:#1a1534;border-radius:14px;padding:16px;box-shadow:var(--shadow-soft)}
-  .quiz h3{margin:0 0 8px}
-  .opts{display:grid;gap:10px;margin-top:10px}
-  .opts button{
-  text-align:left;appearance:none;border:none;border-radius:12px;
-  padding:14px 16px;               /* было 12px 14px */
-  font-size:18px;                  /* добавили размер шрифта */
-  line-height:1.3;                 /* читабельнее */
-  min-height:48px;                 /* удобная «тап-цель» */
-  background:#231d43;color:var(--text);
-  cursor:pointer;
-  transition:transform .12s var(--ease), background .15s var(--ease)
-}
-  .opts button:active{transform:scale(.97)}
-  .opts button.correct{background:rgba(37,164,106,.25);outline:1px solid rgba(37,164,106,.7)}
-  .opts button.wrong{background:rgba(255,77,109,.18);outline:1px solid rgba(255,77,109,.7)}
-  dialog{border:none;border-radius:16px;background:#191532;color:var(--text);padding:0;box-shadow:0 20px 80px rgba(0,0,0,.6)}
-  dialog::backdrop{background:rgba(0,0,0,.45);backdrop-filter:blur(3px)}
-  .modal{padding:16px;min-width:min(92vw,420px)}
-  .modal h3{margin:0 0 10px}
-  .modal .row{margin-top:10px}
-  .modal input{width:100%;appearance:none;border:none;border-radius:12px;padding:10px 12px;background:#231e46;color:var(--text);outline:none}
-  /* не трогаем actions внутри #dlgAdd */
-.modal .actions:not(.actions-add){
-  display:flex;
-  gap:10px;
-  justify-content:flex-end;
-  margin-top:12px;
-}
-
-  /* Кнопки в диалоге "Новая карточка" — мобильный вид (2 колонки) */
-.actions-add{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap:10px;
-  /* важно: переопределяем то, что задаёт .modal .actions */
-  justify-content: unset;
-  align-content: start;
-}
-.actions-add .chip{
-  width:100%;
-  min-width:0;          /* Safari iOS: позволяем кнопке сжиматься внутри грида */
-}
-
-/* Десктоп: в одну строку */
-@media (min-width:680px){
-  #dlgAdd .modal{ min-width:560px; }
-  .actions-add{
-    display:flex;
-    flex-wrap:nowrap;
-    gap:10px;
-    justify-content:space-between;
+  /* верхняя строка: меню + индикатор (пустая зона как в iOS) */
+  .topbar{
+    height:28px; display:flex; align-items:center; justify-content:flex-start;
+    color:#f6a31a; font-size:22px; padding-left:2px; user-select:none;
   }
-  .actions-add .chip{ width:auto; }
-}
+  .hamburger{
+    width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .hamburger::before{
+    content:"\2630"; /* ☰ */
+    line-height:1; transform: translateY(-1px);
+  }
 
-  .footnote{margin-top:10px;color:var(--muted);font-size:12px}
-  .linklike{color:#9ea0ff;text-decoration:underline;cursor:pointer}
-  :focus-visible{outline:2px solid #8c7aff;outline-offset:2px;border-radius:10px}
-  .spinner{display:inline-block;min-width:1.2em}
- 
- /* ---- Color palettes in Settings ---- */
-.palette{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.swatch{width:28px;height:28px;border-radius:8px;border:none;cursor:pointer;box-shadow:var(--shadow-soft);
-        outline:1px solid rgba(255,255,255,.08)}
-.swatch[aria-pressed="true"]{outline:2px solid #8c7aff}
+  /* дисплей */
+  .display{
+    flex:1;
+    display:flex; align-items:flex-end; justify-content:flex-end;
+    color:var(--fg); font-weight:600; font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing:1px;
+    padding:0 12px;
+  }
+  .value{
+    font-size:min(20vw, 112px);
+    line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
 
-/* iOS-like switch */
-.ios-switch {
-  display:inline-flex; align-items:center; gap:.7rem;
-  cursor:pointer; user-select:none;
-}
-.ios-switch input {
-  position:absolute; opacity:0; width:0; height:0; /* скрыт, но доступен */
-}
-.ios-switch .track {
-  --w: 48px; --h: 28px; --pad: 3px;
-  position:relative; width:var(--w); height:var(--h);
-  background:#9aa0a6; border-radius:var(--h);
-  transition: background .22s var(--ease, cubic-bezier(.22,.61,.36,1)), box-shadow .22s;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
-}
-.ios-switch .thumb {
-  position:absolute; top: var(--pad); left: var(--pad);
-  width: calc(var(--h) - var(--pad)*2); height: calc(var(--h) - var(--pad)*2);
-  background:#fff; border-radius:50%;
-  box-shadow: 0 3px 10px rgba(0,0,0,.25), 0 2px 4px rgba(0,0,0,.18);
-  transition: transform .22s var(--ease, cubic-bezier(.22,.61,.36,1));
-}
+  /* сетка кнопок */
+  .grid{
+    display:grid; gap:12px;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  button{
+    outline:none; border:none; border-radius:var(--radius);
+    height:72px; font-size:32px; color:var(--btnText);
+    background:var(--btn); cursor:pointer; font-weight:500;
+  }
+  button:active{filter:brightness(1.15)}
+  .sm{ font-size:26px }
+  .light{ background:var(--btn2); color:#fff }
+  .op{ background:var(--op); color:#fff }
+  .zero{ grid-column: span 2; text-align:left; padding-left:30px }
 
-/* Checked */
-.ios-switch input:checked + .track { background:#34c759; }   /* iOS green */
-.ios-switch input:checked + .track .thumb {
-  transform: translateX(calc(var(--w) - var(--h)));
-}
+  /* иконка backspace на кнопке слева вместо AC */
+  .icon-back::before{
+    content:"⌫";
+    font-size:28px;
+  }
 
-/* Focus (клавиатура) */
-.ios-switch input:focus-visible + .track {
-  outline:2px solid #1b73e8; outline-offset:3px;
-}
+  /* скрытое модальное окно для Full Reset */
+  .sheet{
+    position:fixed; inset:0; background:rgba(0,0,0,.35);
+    display:none; align-items:flex-end; justify-content:center; z-index:50;
+  }
+  .sheet.open{ display:flex }
+  .sheet .panel{
+    width:100%; background:#1b1b1d; border-top-left-radius:18px; border-top-right-radius:18px;
+    padding:14px 16px 20px; color:#fff;
+  }
+  .sheet .grab{ width:48px; height:4px; background:#3a3a3c; border-radius:2px; margin:6px auto 14px; }
+  .sheet h3{margin:0 0 10px 0; font-size:16px; color:#bbb; text-align:center}
+  .danger{
+    width:100%; height:54px; border-radius:14px; background:#ff453a; color:#fff;
+    font-size:18px; border:none;
+  }
+  .ghost{
+    margin-top:10px; width:100%; height:50px; border-radius:14px; background:#2c2c2e; color:#fff;
+    font-size:16px; border:none;
+  }
 
-/* Disabled (если пригодится) */
-.ios-switch input:disabled + .track { filter:grayscale(.4) brightness(.95); }
-.ios-switch input:disabled ~ .switch-text { opacity:.6; }
-
-/* Текст справа */
-.ios-switch .switch-text { opacity:.9; }
-
+  /* предотвращаем внезапные переносы на очень узких экранах */
+  @media (max-width:360px){
+    .value{ font-size:min(22vw, 96px); }
+  }
 </style>
 </head>
 <body>
-<div class="wrap" id="app" aria-live="polite">
-  <header>
-  <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Прогресс обучения"><span id="progressFill"></span></div>
-  <div class="meta" id="progressText">Прогресс: 0% (0/0) | Повторить: 0</div>
-
-  <div class="tabs" role="tablist" aria-label="Навигация вкладок">
-    <button class="iconbtn" id="btnSettings" title="Настройки" aria-label="Настройки">⚙️</button>
-
-    <div class="tabbar">
-      <button role="tab" aria-selected="true" id="tabFlash" class="tab active">Flashcards</button>
-      <button class="dirbtn" id="btnDirection" type="button" title="Сменить направление">EN→ES</button>
-      <button role="tab" aria-selected="false" id="tabQuiz" class="tab">Квиз</button>
-    </div>
-
-    <button class="iconbtn" id="btnAdd" title="Добавить карточку" aria-label="Добавить">＋</button>
-  </div>
-</header>
-
-  <!-- FLASHCARDS -->
-  <section id="viewFlash">
-    <div class="cardwrap">
-      <div class="card3d" aria-label="Карточка">
-        <div class="card" id="card">
-          <div class="face front" id="frontText">Front</div>
-          <div class="face back" id="backText">Back</div>
-        </div>
-        <div class="zones" aria-hidden="true">
-          <button id="zoneBack" title="Назад" aria-label="Назад"></button>
-          <button id="zoneFlip" title="Перевернуть" aria-label="Перевернуть"></button>
-          <button id="zoneNext" title="Далее" aria-label="Далее"></button>
-        </div>
-      </div>
-      <div class="controls">
-        <button class="btn blue"  id="btnRepeat"  style="color:#fff !important; -webkit-text-fill-color:#fff">↺ Повторить</button>
-<button class="btn green" id="btnLearned" style="color:#fff !important; -webkit-text-fill-color:#fff">✔ Запомнил</button>
-      </div>
-    </div>
-
-    <div class="row"><div id="counters" class="meta">Всего: 0 • Выучено: 0 • Повторить: 0</div></div>
-
-        <div class="listwrap" id="mainListWrap" hidden>
-  <div class="list" id="list"></div>
-</div>
-  </section>
-
-  <!-- QUIZ -->
-  <section id="viewQuiz" hidden>
-    <div class="quiz" role="group" aria-label="Квиз">
-      <div class="meta" id="quizMeta">вопрос 0 из 0, правильных 0</div>
-      <h3 id="quizPrompt">…</h3>
-      <div class="opts" id="quizOpts"></div>
-      <div class="row"><button class="chip" id="quizRestart" hidden>Снова</button></div>
-    </div>
-  </section>
-</div>
-
-<!-- SETTINGS MODAL -->
-<dialog id="dlgSettings" aria-label="Настройки">
-  <form method="dialog" class="modal">
-  <h3>Настройки</h3>
-
-  <div class="row" style="flex-direction:column;align-items:flex-start;width:100%">
-    <div>Фон приложения</div>
-    <div id="bgPalette" class="palette" aria-label="Выбор фона"></div>
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="hamburger" id="btnMenu" aria-label="menu"></div>
   </div>
 
-  <div class="row" style="flex-direction:column;align-items:flex-start;width:100%">
-    <div>Цвет карточек</div>
-    <div id="cardPalette" class="palette" aria-label="Выбор цвета карточек"></div>
+  <div class="display">
+    <div class="value" id="display">0</div>
   </div>
 
-  <div class="row">
-  <button type="button" class="chip" id="btnToggleList" aria-expanded="true">Скрыть список</button>
-  <button type="button" class="chip" id="btnReset"
-    onclick="localStorage.removeItem('minimal-flashcards-html-v1'); location.reload();">
-    Сброс данных
-  </button>
+  <div class="grid" id="keys">
+    <button class="light" data-key="AC" id="keyAC">AC</button>
+    <button class="light sm" data-key="+/-">+/−</button>
+    <button class="light sm" data-key="%">%</button>
+    <button class="op sm" data-key="÷">÷</button>
+
+    <button data-key="7">7</button>
+    <button data-key="8">8</button>
+    <button data-key="9">9</button>
+    <button class="op sm" data-key="×">×</button>
+
+    <button data-key="4">4</button>
+    <button data-key="5">5</button>
+    <button data-key="6">6</button>
+    <button class="op sm" data-key="−">−</button>
+
+    <button data-key="1">1</button>
+    <button data-key="2">2</button>
+    <button data-key="3">3</button>
+    <button class="op sm" data-key="+">+</button>
+
+    <button class="zero" data-key="0">0</button>
+    <button data-key=".">.</button>
+    <button class="op" data-key="=" id="keyEq">=</button>
+  </div>
 </div>
-<div id="settingsListWrap" class="listwrap" hidden></div>
-  <div class="actions"><button class="chip" value="cancel">Закрыть</button></div>
-</form>
-</dialog>
 
-<!-- ADD MODAL -->
-<dialog id="dlgAdd" aria-label="Добавить карточку" tabindex="-1">
-  <form method="dialog" class="modal" id="addForm">
-    <h3>Новая карточка</h3>
-
-    <div class="row"><input id="addFront" placeholder="Front (EN)" autocomplete="off" /></div>
-    <div class="row"><input id="addBack"  placeholder="Back (ES)"  autocomplete="off" /></div>
-
-    <div class="row" style="justify-content:space-between;width:100%">
-      <label class="ios-switch">
-  <input type="checkbox" id="autoTranslate" checked />
-  <span class="track"><span class="thumb"></span></span>
-  <span class="switch-text">Автоперевод</span>
-</label>
-      <div class="meta" id="trStatus"><span class="spinner" aria-live="polite"></span></div>
-    </div>
-
-    <!-- ЕДИНЫЙ блок кнопок -->
-    <div class="actions actions-add">
-      <button class="chip" type="button" id="btnTranslate">Перевести</button>
-      <button class="chip" type="button" id="btnClearAdd">Очистить</button>
-      <button class="chip" type="submit" id="btnAddConfirm">Добавить</button>
-      <button class="chip" type="button" id="btnAddClose" autofocus>Закрыть</button>
-    </div>
-
-    <div class="footnote">Онлайн-перевод через LibreTranslate. Если сети нет — офлайн шаблоны (&gt;1000 типовых фраз) и мини-словарь.</div>
-  </form>
-</dialog>
-
-<!-- Встроенный офлайн-словарь EN→ES -->
-<!-- сюда потом можно вставить ещё ~5000 объектов -->
-<script type="application/json" id="offlineDictENES">
-[
-  {"en":"make a reservation","es":"hacer una reserva"},
-  {"en":"boarding pass","es":"tarjeta de embarque"},
-  {"en":"window seat","es":"asiento de ventana"},
-  {"en":"how much does it cost?","es":"¿cuánto cuesta?"},
-  {"en":"call an ambulance","es":"llame a una ambulancia"},
-  {"en":"water without ice","es":"agua sin hielo"},
-  {"en":"i would like a coffee","es":"quisiera un café"},
-  {"en":"where is the train station?","es":"¿dónde está la estación de tren?"},
-  {"en":"do you accept credit cards?","es":"¿acepta tarjetas de crédito?"},
-  {"en":"the bill, please","es":"la cuenta, por favor"},
-  {"en":"a room for two nights","es":"una habitación por dos noches"},
-  {"en":"my passport is lost","es":"he perdido mi pasaporte"},
-  {"en":"i am allergic to nuts","es":"soy alérgico a los frutos secos"},
-  {"en":"can you speak slower?","es":"¿puede hablar más despacio?"},
-  {"en":"where is the nearest pharmacy?","es":"¿dónde está la farmacia más cercana?"},
-  {"en":"cheers!","es":"¡salud!"},
-  {"en":"i need a doctor","es":"necesito un doctor"},
-  {"en":"left or right?","es":"¿izquierda o derecha?"},
-  {"en":"open from nine to five","es":"abierto de nueve a cinco"},
-  {"en":"how long does it take?","es":"¿cuánto tiempo tarda?"},
-  {"en":"good morning","es":"buenos días"},
-  {"en":"good night","es":"buenas noches"},
-  {"en":"good afternoon","es":"buenas tardes"},
-  {"en":"thank you very much","es":"muchas gracias"},
-  {"en":"you are welcome","es":"de nada"},
-  {"en":"excuse me","es":"disculpe"},
-  {"en":"i am sorry","es":"lo siento"},
-  {"en":"what time is it?","es":"¿qué hora es?"},
-  {"en":"where are you from?","es":"¿de dónde eres?"},
-  {"en":"i am from spain","es":"soy de españa"},
-  {"en":"i am from russia","es":"soy de rusia"},
-  {"en":"i am from the united states","es":"soy de estados unidos"},
-  {"en":"nice to meet you","es":"mucho gusto"},
-  {"en":"see you later","es":"hasta luego"},
-  {"en":"see you tomorrow","es":"hasta mañana"},
-  {"en":"see you soon","es":"hasta pronto"},
-  {"en":"what is your name?","es":"¿cómo te llamas?"},
-  {"en":"my name is john","es":"me llamo juan"},
-  {"en":"how are you?","es":"¿cómo estás?"},
-  {"en":"i am fine","es":"estoy bien"},
-  {"en":"i am tired","es":"estoy cansado"},
-  {"en":"i am hungry","es":"tengo hambre"},
-  {"en":"i am thirsty","es":"tengo sed"},
-  {"en":"i am cold","es":"tengo frío"},
-  {"en":"i am hot","es":"tengo calor"},
-  {"en":"i am happy","es":"estoy feliz"},
-  {"en":"i am sad","es":"estoy triste"},
-  {"en":"i am sick","es":"estoy enfermo"},
-  {"en":"i am busy","es":"estoy ocupado"},
-  {"en":"i am free","es":"estoy libre"},
-  {"en":"i am ready","es":"estoy listo"},
-  {"en":"i need help","es":"necesito ayuda"},
-  {"en":"call the police","es":"llame a la policía"},
-  {"en":"call a doctor","es":"llame a un doctor"},
-  {"en":"call a taxi","es":"llame un taxi"},
-  {"en":"where is the airport?","es":"¿dónde está el aeropuerto?"},
-  {"en":"where is the hotel?","es":"¿dónde está el hotel?"},
-  {"en":"where is the bus stop?","es":"¿dónde está la parada de autobús?"},
-  {"en":"where is the train station?","es":"¿dónde está la estación de tren?"},
-  {"en":"where is the subway?","es":"¿dónde está el metro?"},
-  {"en":"where is the bank?","es":"¿dónde está el banco?"},
-  {"en":"where is the pharmacy?","es":"¿dónde está la farmacia?"},
-  {"en":"where is the supermarket?","es":"¿dónde está el supermercado?"},
-  {"en":"where is the restaurant?","es":"¿dónde está el restaurante?"},
-  {"en":"where is the bathroom?","es":"¿dónde está el baño?"},
-  {"en":"how much is a ticket?","es":"¿cuánto cuesta un boleto?"},
-  {"en":"how much is this?","es":"¿cuánto cuesta esto?"},
-  {"en":"how much is the room per night?","es":"¿cuánto cuesta la habitación por noche?"},
-  {"en":"how much is the bill?","es":"¿cuánto es la cuenta?"},
-  {"en":"how much is the coffee?","es":"¿cuánto cuesta el café?"},
-  {"en":"i would like water","es":"quisiera agua"},
-  {"en":"i would like tea","es":"quisiera té"},
-  {"en":"i would like beer","es":"quisiera cerveza"},
-  {"en":"i would like wine","es":"quisiera vino"},
-  {"en":"i would like breakfast","es":"quisiera desayuno"},
-  {"en":"i would like lunch","es":"quisiera almuerzo"},
-  {"en":"i would like dinner","es":"quisiera cena"},
-  {"en":"a table for two, please","es":"una mesa para dos, por favor"},
-  {"en":"a table for four, please","es":"una mesa para cuatro, por favor"},
-  {"en":"the menu, please","es":"el menú, por favor"},
-  {"en":"the bill, please","es":"la cuenta, por favor"},
-  {"en":"with sugar","es":"con azúcar"},
-  {"en":"without sugar","es":"sin azúcar"},
-  {"en":"with milk","es":"con leche"},
-  {"en":"without milk","es":"sin leche"},
-  {"en":"with ice","es":"con hielo"},
-  {"en":"without ice","es":"sin hielo"},
-  {"en":"one ticket, please","es":"un boleto, por favor"},
-  {"en":"two tickets, please","es":"dos boletos, por favor"},
-  {"en":"i have a reservation","es":"tengo una reserva"},
-  {"en":"i lost my passport","es":"perdí mi pasaporte"},
-  {"en":"my luggage is lost","es":"mi equipaje está perdido"},
-  {"en":"can you help me?","es":"¿puede ayudarme?"},
-  {"en":"can you repeat that?","es":"¿puede repetir eso?"},
-  {"en":"can you speak english?","es":"¿habla inglés?"},
-  {"en":"i do not understand","es":"no entiendo"},
-  {"en":"i do not know","es":"no sé"},
-  {"en":"what does this mean?","es":"¿qué significa esto?"},
-  {"en":"i want to go to the airport","es":"quiero ir al aeropuerto"},
-  {"en":"i want to go to the hotel","es":"quiero ir al hotel"},
-  {"en":"i want to go to the city center","es":"quiero ir al centro"},
-  {"en":"i want to go to the beach","es":"quiero ir a la playa"},
-  {"en":"i need a taxi","es":"necesito un taxi"},
-  {"en":"i need a bus","es":"necesito un autobús"},
-  {"en":"i need a train","es":"necesito un tren"},
-  {"en":"i need a room","es":"necesito una habitación"},
-  {"en":"i need a doctor","es":"necesito un doctor"},
-  {"en":"i need a pharmacy","es":"necesito una farmacia"},
-  {"en":"i need medicine","es":"necesito medicina"},
-  {"en":"i am allergic to penicillin","es":"soy alérgico a la penicilina"},
-  {"en":"i have a fever","es":"tengo fiebre"},
-  {"en":"i have a headache","es":"tengo dolor de cabeza"},
-  {"en":"i have a stomachache","es":"tengo dolor de estómago"},
-  {"en":"i have no cash","es":"no tengo efectivo"},
-  {"en":"i need an atm","es":"necesito un cajero automático"},
-  {"en":"can i pay with card?","es":"¿puedo pagar con tarjeta?"},
-  {"en":"do you accept visa?","es":"¿acepta visa?"},
-  {"en":"open from monday to friday","es":"abierto de lunes a viernes"},
-  {"en":"closed on sunday","es":"cerrado el domingo"}
-]
-</script>
+<!-- Секретный Full Reset (открывается долгим тапом по ☰) -->
+<div class="sheet" id="sheet">
+  <div class="panel">
+    <div class="grab"></div>
+    <h3>Hidden Actions</h3>
+    <button class="danger" id="btnFullReset">Full Reset</button>
+    <button class="ghost" id="btnCloseSheet">Close</button>
+  </div>
+</div>
 
 <script>
-(() => {
-  const STORAGE_KEY = 'minimal-flashcards-html-v1';
-  /* ... */
+/* ---------- утилиты жестов ---------- */
+function onLongPress(el, ms, handler){
+  let t=null;
+  el.addEventListener('touchstart', e=>{ t=setTimeout(()=>handler(e), ms) }, {passive:true});
+  el.addEventListener('touchend',   ()=>{ clearTimeout(t) });
+  el.addEventListener('touchmove',  ()=>{ clearTimeout(t) });
+  el.addEventListener('mousedown',  ()=>{ t=setTimeout(handler, ms) });
+  el.addEventListener('mouseup',    ()=>{ clearTimeout(t) });
+  el.addEventListener('mouseleave', ()=>{ clearTimeout(t) });
+}
+function now(){ return Date.now() }
 
-  /** ---------- Helpers ---------- */
-  const $ = sel => document.querySelector(sel);
-  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
-  const now = ()=>Date.now();
-  function prng(seed){ const x = Math.sin(seed)*10000; return x - Math.floor(x); }
-  function weightedPick(weights, excludeIndex=null, seed=1){
-    const n=weights.length, total=weights.reduce((a,b)=>a+b,0); if(total<=0)return -1;
-    let r=prng(seed)*total, acc=0, pick=0; for(let i=0;i<n;i++){ acc+=weights[i]; if(r<=acc){ pick=i; break; } }
-    if(excludeIndex!=null && n>1 && pick===excludeIndex){ r=prng(seed+0.1234)*total; acc=0; for(let i=0;i<n;i++){ acc+=weights[i]; if(r<=acc){ pick=i; break; } } }
-    return pick;
-  }
-  function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-  function loadState(){ try{const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return null; return JSON.parse(raw);}catch(e){console.warn('loadState fail',e); return null;} }
-  function escapeHtml(s){ return (s??'').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+/* ---------- состояние калькулятора ---------- */
+const display   = document.getElementById('display');
+const keys      = document.getElementById('keys');
+const keyAC     = document.getElementById('keyAC');
+const keyEq     = document.getElementById('keyEq');
+const sheet     = document.getElementById('sheet');
+const btnMenu   = document.getElementById('btnMenu');
 
-  /** ---------- State ---------- */
-const state = {
-  cards: [],
-  currentId: null,
-  direction: 'EN2ES',
-  tab: 'flash',
-  shuffleSeed: 1.2345,
-  showList: false,
-
-  // стек истории показа карточек (для «назад»)
-  history: [],
-
-  theme: { bg0:'', bg1:'', card1:'', card2:'' },
-
-  quiz: { pool:[], index:0, right:0, finished:false, lastAnswer:null }
+let state = {
+  cur: '0',          // текущее число (строка)
+  prev: null,        // предыдущее число (string)
+  op: null,          // текущий оператор '+', '−', '×', '÷'
+  justEvaluated:false,
+  // секретный режим
+  secret:false,           // включён ли «магический» режим
+  secretChosen:null,      // выбранная «угадываемая» цифра
+  secretArmed:false,      // после выбора цифры ожидаем нажатие зрителя
 };
 
-  /** ---------- DOM ---------- */
-  const elProgressFill = $('#progressFill'), elProgressText=$('#progressText'), elCounters=$('#counters');
-  const elFront=$('#frontText'), elBack=$('#backText'), elCard=$('#card'), elList=$('#list');
-const mainListWrap = $('#mainListWrap');
-const settingsListWrap = $('#settingsListWrap');
-const elBtnDir=$('#btnDirection'), btnToggleList=$('#btnToggleList');
-  const elZoneBack=$('#zoneBack'), elZoneFlip=$('#zoneFlip'), elZoneNext=$('#zoneNext');
-  const btnLearned=$('#btnLearned'), btnRepeat=$('#btnRepeat');
-  const tabFlash=$('#tabFlash'), tabQuiz=$('#tabQuiz'), viewFlash=$('#viewFlash'), viewQuiz=$('#viewQuiz');
-  const btnSettings=$('#btnSettings'), btnAdd=$('#btnAdd'), dlgSettings=$('#dlgSettings');
-  const dlgAdd=$('#dlgAdd'), addForm=$('#addForm'), addFront=$('#addFront'), addBack=$('#addBack');
-  const btnClearAdd=$('#btnClearAdd');
-  const btnAddClose = $('#btnAddClose');
-  const quizMeta=$('#quizMeta'), quizPrompt=$('#quizPrompt'), quizOpts=$('#quizOpts'), quizRestart=$('#quizRestart');
-  const autoTranslate=$('#autoTranslate'), btnTranslate=$('#btnTranslate'), trStatus=$('#trStatus');
-  const bgPalette=$('#bgPalette'), cardPalette=$('#cardPalette');
- 
-  /** ---------- App ---------- */
-  function uid(){ return Math.random().toString(36).slice(2) + Date.now().toString(36); }
-  function addCard(front, back, demo=false){
-    const c={id:uid(), front:String(front).trim(), back:String(back).trim(), box:1, hard:false, repeat:false, learned:false, last:Date.now()};
-    if(demo){ state.cards.push(c); } else { state.cards.unshift(c); }
-    if(!state.currentId) state.currentId=c.id; saveState();
+function setDisplay(val){
+  // форматируем как iOS (без лишних нулей)
+  if (typeof val === 'number') val = String(val);
+  if (val.indexOf('.')>=0){
+    val = val.replace(/\.0+$/,'').replace(/(\.\d*?[1-9])0+$/,'$1');
   }
-  function ensureDemo(){ if(state.cards.length) return;
-addCard('Hello! Good morning','¡Hola! Buenos días',true);
-addCard('Thank you','¡Gracias!',true);
-addCard('How much is this?','¿Cuánto cuesta esto?',true)
-addCard('The salad','La ensalada',true);
-addCard('The soup','La sopa',true);
-addCard('a menu','un menú',true);
-addCard('a napkin','una servilleta',true);
-addCard('Thank you very much','¡Muchas gracias!',true);
-addCard('Goodbye!','¡Adiós!',true);
-addCard('Very well, and you?','Muy bien, ¿y tú?',true);
-addCard('a fork','un tenedor',true);
-addCard('a spoon','una cuchara',true);
-addCard('The United States','los Estados Unidos',true);
-addCard('Wow excellent!','¡Wow! ¡Qué bueno!',true);
-addCard('Hello, How are you?','Hola, ¿cómo estás?',true);
-addCard('Yes, of course','Sí, claro',true);
-addCard('Where are you from?','¿De dónde eres?',true);
-addCard('A table for two, please','Una mesa para dos, por favor',true);
-addCard('do sports','hacer deportes',true);
-addCard('the fish','el pescado',true);
-addCard('read','leer',true);
-addCard('write','escribir',true);
-addCard('I am Max','Yo soy Max',true);
-addCard('Hello, nice to meet you','Hola, mucho gusto',true);
-addCard('Welcome!','¡Bienvenidos!',true);
-addCard('cook','cocinar',true);
-addCard('I am from Armenia','Yo soy de Armenia',true);
-addCard('Delicious food','Comida rica',true);
-addCard('What do you like to do?','¿Qué te gusta hacer?',true);
-addCard('Welcome to the restaurant!','¡Bienvenido(a) al restaurante!',true);
-addCard('What is your name?','¿Cómo te llamas?',true);
-addCard('Could you bring a menu please?','¿Podría traer un menú, por favor?',true);
-addCard('What do you like to cook?','¿Qué te gusta cocinar?',true);
-addCard('My name is Victor (I am called)','Me llamo Victor',true);
-addCard('See you later','Hasta luego',true);
-addCard('You are welcome (It is nothing)','De nada',true);
-addCard('I like your Spanish','¡Me gusta tu español!',true);
-addCard('I am from the United States','Yo soy de los Estados Unidos',true);
-addCard('Mexico','México',true);
-addCard('Canada','Canadá',true);
-addCard('France','Francia',true);
-addCard('How many people are in your party? (How many are you?)','¿Cuántos son?',true);
-addCard('Do you want anything else?','¿Desea algo más?',true);
-addCard('I would recommend the pasta','Le recomendaría la pasta',true);
-addCard('What would you like? (What (do you) desire?)','¿Qué desea?',true);
-addCard('I like to read (write)','Me gusta leer (escribir)',true);
-addCard('What do you recommend? (me)','¿Qué me recomienda?',true);
-addCard('I like to do yoga (sports)','Me gusta hacer yoga (deportes)',true);
-addCard('Can you say that again, please?','¿Puedes decirlo de nuevo, por favor?',true);
-addCard('What don’t you like to do?','¿Qué no te gusta hacer?',true);
-addCard('I don’t like to do yoga','No me gusta hacer yoga',true);
-addCard('I don’t like to read (write)','No me gusta leer (escribir)',true);
-addCard('Oh, I see','Ah, ya veo',true);
-addCard('I’m sorry, what did you say?','Disculpa, ¿qué dijiste?',true);
-addCard('draw','dibujar',true);
-addCard('paint','pintar',true);
-addCard('study Spanish','estudiar español',true);
-addCard('sing','cantar',true);
-addCard('I like to study Spanish','Me gusta estudiar español',true);
-addCard('I like to draw and paint','Me gusta dibujar y pintar',true);
-addCard('I like to cook and do sports','Me gusta cocinar y hacer deportes',true);
-addCard('Can you repeat that again, please?','¿Puedes repetir eso de nuevo, por favor?',true);
-addCard('That’s wonderful!','¡Maravilloso!',true);
-addCard('Я восхищен','Encantado',true); // по смыслу ещё вариант: "Estoy impresionado" (для муж. рода)
-addCard('What do you like to do in your free time?','¿Qué te gusta hacer en tu tiempo libre?',true);
-addCard('I like to sing in my free time','En mi tiempo libre me gusta cantar',true);
-addCard('Delicious','¡Delicioso!',true);
-addCard('Brilliant','¡Brillante!',true);
-addCard('fun','divertido',true);
-addCard('boring','aburrido',true);
-addCard('easy','fácil',true);
-addCard('difficult','difícil',true);
-addCard('Why do you like to cook?','¿Por qué te gusta cocinar?',true);
-addCard('Why don’t you like to cook?','¿Por qué no te gusta cocinar?',true);
-addCard('I like to study Spanish because it’s easy','Me gusta estudiar español porque es fácil',true);
-addCard('I like to cook because it’s fun','Me gusta cocinar porque es divertido',true);
-addCard('I don’t like to read because it’s boring','No me gusta leer porque es aburrido',true);
-addCard('I don’t like to draw because it’s difficult','No me gusta dibujar porque es difícil',true);
-addCard('I understand','Entiendo',true);
-addCard('Let’s do something fun today','¡Vamos a hacer algo divertido hoy!',true);
-addCard('Monday','lunes',true);
-addCard('Tuesday','martes',true);
-addCard('Wednesday','miércoles',true);
-addCard('Thursday','jueves',true);
-addCard('a plate','un plato',true);
-addCard('a cup','una taza',true);
-addCard('a wine glass','una copa',true);
-addCard('Could you bring a cup, please?','¿Podría traer una taza, por favor?',true);                 addCard('six','seis',true);
-addCard('seven','siete',true);
-addCard('eight','ocho',true);
-addCard('nine','nueve',true);
-addCard('ten','diez',true);       
-                       }
-
-  function computeProgress(){ const total=state.cards.length;
-    const learnedCount=state.cards.filter(c=>c.learned===true||c.box>=4).length;
-    const toRepeat=state.cards.filter(c=>c.repeat===true||c.hard===true||c.box<=2).length;
-    const pct= total? Math.round((learnedCount/total)*100) : 0;
-    return {total, learnedCount, toRepeat, pct};
-  }
-  function refreshProgressUI(){ const {total,learnedCount,toRepeat,pct}=computeProgress();
-    elProgressFill.style.width = pct+'%';
-    elProgressText.textContent = `Прогресс: ${pct}% (${learnedCount}/${total}) | Повторить: ${toRepeat}`;
-    elProgressFill.parentElement.setAttribute('aria-valuenow', pct);
-    elCounters.textContent = `Всего: ${total} • Выучено: ${learnedCount} • Повторить: ${toRepeat}`;
-  }
-  function currentCard(){ if(!state.currentId && state.cards.length) state.currentId=state.cards[0].id; return state.cards.find(c=>c.id===state.currentId)||null; }
-  function setCardTexts(c){ const dir=state.direction; const front=dir==='EN2ES'? c.front : c.back; const back=dir==='EN2ES'? c.back : c.front; elFront.textContent=front||'—'; elBack.textContent=back||'—'; }
-  function renderFlash(){ const c=currentCard(); if(!c){ elFront.textContent='Нет карточек'; elBack.textContent='Добавьте новые через ＋'; return;} setCardTexts(c); }
-
-  function renderList(){
-  const items = state.cards;
-  if(!items.length){
-    elList.innerHTML = `<div style="padding:14px;color:var(--muted)">Пока нет карточек</div>`;
-    return;
-  }
-
-    elList.innerHTML = items.map(c=>{
-      const status = c.learned? '✔ выучено' : (c.repeat||c.hard||c.box<=2)? '↺ повторить' : 'в процессе';
-      return `<details data-id="${c.id}">
-        <summary><span>${escapeHtml(c.front)} <span class="status">— ${escapeHtml(c.back)}</span></span>
-          <span class="status">${status}<span class="pill">Box ${c.box}</span></span></summary>
-        <div style="padding:0 14px 12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap">
-          <button class="chip" data-act="focus">Показать</button>
-          <button class="chip" data-act="markLearned">✔ Запомнил</button>
-          <button class="chip" data-act="markRepeat">↺ Повторить</button>
-          <button class="chip" data-act="boxUp">⬆ Box</button>
-          <button class="chip" data-act="boxDown">⬇ Box</button>
-          <button class="chip" data-act="delete" style="background:#3b1d3b">Удалить</button>
-        </div></details>`;
-    }).join('');
-  }
-
-  function switchTab(tab){ state.tab=tab;
-    tabFlash.classList.toggle('active',tab==='flash'); tabQuiz.classList.toggle('active',tab==='quiz');
-    tabFlash.setAttribute('aria-selected',tab==='flash'); tabQuiz.setAttribute('aria-selected',tab==='quiz');
-    viewFlash.hidden=tab!=='flash'; viewQuiz.hidden=tab!=='quiz'; saveState(); if(tab==='quiz') startQuiz();
-  }
-
-  let flipped=false;
-  function flipCard(force){ flipped = typeof force==='boolean'? force : !flipped; elCard.style.transform = flipped? 'rotateY(180deg)':'rotateY(0deg)'; }
-  function applyLearned(){ const c=currentCard(); if(!c)return; c.learned=true;c.repeat=false;c.hard=false;c.box=clamp(c.box+1,1,5);c.last=now(); nextCard(true); saveState(); refreshProgressUI(); renderList(); }
-  function applyRepeat(){ const c=currentCard(); if(!c)return; c.repeat=true;c.hard=true;c.learned=false;c.box=Math.min(c.box,2);c.last=now(); nextCard(false); saveState(); refreshProgressUI(); renderList(); }
-  function directionLabel(){ return state.direction==='EN2ES'?'EN→ES':'ES→EN'; }
-  function nextCard(){
-  flipCard(false);
-  if (state.cards.length <= 1) return;
-
-  const currentIndex = state.cards.findIndex(c => c.id === state.currentId);
-  const weights = state.cards.map(c => 1 / Math.max(1, c.box));
-  state.shuffleSeed += .517;
-  const pick = weightedPick(weights, currentIndex, state.shuffleSeed);
-
-  if (pick >= 0) {
-    // запоминаем текущую карточку в историю
-    if (state.currentId) {
-      state.history.push(state.currentId);
-      // чтобы не разрасталась бесконечно
-      if (state.history.length > 200) state.history.shift();
-    }
-    state.currentId = state.cards[pick].id;
-    setCardTexts(state.cards[pick]);
-  }
-  saveState();
+  if (val === '' || val === '-') val = '0';
+  display.textContent = val;
 }
 
-function prevCard(){
-  // идём назад строго по истории показов
-  if (!state.history || state.history.length === 0) return;
-  const prevId = state.history.pop();
-  if (!prevId) return;
-
-  state.currentId = prevId;
-  flipCard(false);
-  renderFlash();
-  saveState();
+function updateACVisual(){
+  // если есть ввод — показываем backspace
+  const showBack = state.cur !== '0' || state.justEvaluated;
+  keyAC.textContent = showBack ? '' : 'AC';
+  keyAC.classList.toggle('icon-back', showBack);
 }
 
-  /** List toggle (single button) */
-  function applyListVisibility(){
-  if (mainListWrap) mainListWrap.hidden = true;            // на главном экране всегда скрыто
-  if (settingsListWrap) settingsListWrap.hidden = !state.showList; // показываем в модалке
-  btnToggleList.textContent = state.showList ? 'Скрыть список' : 'Показать список';
-  btnToggleList.setAttribute('aria-expanded', String(state.showList));
-}
-  btnToggleList.addEventListener('click', () => { state.showList = !state.showList; applyListVisibility(); saveState(); });
-
-  /** Direction & shuffle */
-  elBtnDir.addEventListener('click', ()=>{
-  state.direction = (state.direction==='EN2ES' ? 'ES2EN' : 'EN2ES');
-  elBtnDir.textContent = directionLabel();
-
-  // Обновляем флешкарту
-  const c = currentCard(); 
-  if (c) setCardTexts(c);
-
-  // 🔁 Если сейчас открыт квиз — перерисуем текущий вопрос под новое направление
-  if (state.tab === 'quiz') {
-    repaintQuizCurrent();   // <-- новая функция ниже
-  }
-
-  saveState();
-});
-
-  /** List actions */
-  elList.addEventListener('click',(e)=>{
-    const btn=e.target.closest('button.chip'); if(!btn) return;
-    const details=e.target.closest('details'); if(!details) return;
-    const id=details.getAttribute('data-id'); const card=state.cards.find(c=>c.id===id); if(!card) return;
-    const act=btn.getAttribute('data-act');
-    if (act === 'focus') {
-  if (state.currentId) state.history.push(state.currentId);
-  state.currentId = id;
-  renderFlash();
-  details.open = false;
-  saveState();
-}
-    if(act==='markLearned'){ card.learned=true; card.repeat=false; card.hard=false; card.box=clamp(card.box+1,1,5); }
-    if(act==='markRepeat'){ card.repeat=true; card.hard=true; card.learned=false; card.box=Math.min(card.box,2); }
-    if(act==='boxUp'){ card.box=clamp(card.box+1,1,5); }
-    if(act==='boxDown'){ card.box=clamp(card.box-1,1,5); }
-    if(act==='delete'){ const i=state.cards.findIndex(c=>c.id===id); if(i>=0) state.cards.splice(i,1); if(state.currentId===id) state.currentId=state.cards[0]?.id??null; }
-    saveState(); refreshProgressUI(); renderList(); renderFlash();
-  });
-
-/** ---------- Theme presets & palette ---------- */
-function setVar(name,val){ document.documentElement.style.setProperty(name, val); }
-function applyTheme(t){
-  if(!t) return;
-  if(t.bg0)   setVar('--bg0', t.bg0);
-  if(t.bg1)   setVar('--bg1', t.bg1);
-  if(t.card1) setVar('--cardGrad1', t.card1);
-  if(t.card2) setVar('--cardGrad2', t.card2);
-}
-
-// 10 вариантов фона (bg1 сверху → bg0 снизу)
-const BG_PRESETS = [
-  {name:'Default',         bg0:'#0b0a12', bg1:'#141126'},
-  {name:'Deep Blue',       bg0:'#091735', bg1:'#0a0f2d'},
-  {name:'Midnight Purple', bg0:'#100a1a', bg1:'#1a1029'},
-  {name:'Emerald',         bg0:'#071512', bg1:'#0b1f1a'},
-  {name:'Teal Dark',       bg0:'#0a171a', bg1:'#0d1f24'},
-  {name:'Charcoal',        bg0:'#15151b', bg1:'#0e0e12'},
-  {name:'Warm Brown',      bg0:'#120b09', bg1:'#1e1310'},
-  {name:'Navy',            bg0:'#0f223d', bg1:'#0a1630'},
-  {name:'Indigo',          bg0:'#0f0b2c', bg1:'#16123f'},
-  {name:'Graphite',        bg0:'#0a0c10', bg1:'#111418'},
-];
-
-// 10 вариантов градиента карточек (card1 сверху → card2 снизу)
-const CARD_PRESETS = [
-  {name:'Default',     card1:'#2a2452', card2:'#211c40'},
-  {name:'Blue Steel',  card1:'#2b3a52', card2:'#1d293d'},
-  {name:'Forest',      card1:'#23403a', card2:'#1a2f2a'},
-  {name:'Maroon',      card1:'#3f2a2a', card2:'#2d1d1d'},
-  {name:'Plum',        card1:'#4a2a3f', card2:'#341d2d'},
-  {name:'Dark Gray',   card1:'#404040', card2:'#2a2a2a'},
-  {name:'Teal',        card1:'#2a3a46', card2:'#1f2a34'},
-  {name:'Brown',       card1:'#453a22', card2:'#352a18'},
-  {name:'Indigo',      card1:'#27334f', card2:'#1d2540'},
-  {name:'Blue',        card1:'#2a2f52', card2:'#202644'},
-];
-
-function buildPalettes(){
-  // Фон
-  bgPalette.innerHTML='';
-  BG_PRESETS.forEach((p)=>{
-    const b=document.createElement('button');
-    b.className='swatch';
-    b.title=p.name;
-    b.style.background=`linear-gradient(180deg, ${p.bg1}, ${p.bg0})`;
-    const isActive = state.theme.bg0===p.bg0 && state.theme.bg1===p.bg1;
-    b.setAttribute('aria-pressed', isActive ? 'true':'false');
-    b.addEventListener('click', ()=>{
-      state.theme.bg0=p.bg0; state.theme.bg1=p.bg1;
-      applyTheme(state.theme); saveState();
-      for(const x of bgPalette.querySelectorAll('.swatch')) x.setAttribute('aria-pressed','false');
-      b.setAttribute('aria-pressed','true');
-    });
-    bgPalette.appendChild(b);
-  });
-
-  // Карточки
-  cardPalette.innerHTML='';
-  CARD_PRESETS.forEach((p)=>{
-    const b=document.createElement('button');
-    b.className='swatch';
-    b.title=p.name;
-    b.style.background=`linear-gradient(180deg, ${p.card1}, ${p.card2})`;
-    const isActive = state.theme.card1===p.card1 && state.theme.card2===p.card2;
-    b.setAttribute('aria-pressed', isActive ? 'true':'false');
-    b.addEventListener('click', ()=>{
-      state.theme.card1=p.card1; state.theme.card2=p.card2;
-      applyTheme(state.theme); saveState();
-      for(const x of cardPalette.querySelectorAll('.swatch')) x.setAttribute('aria-pressed','false');
-      b.setAttribute('aria-pressed','true');
-    });
-    cardPalette.appendChild(b);
-  });
-}
-
-  /** Quiz */
-  function buildQuizPool(){ return state.cards.filter(c=>c.repeat===true||c.hard===true||c.box<=2); }
-  function startQuiz(){
-  state.quiz.pool = buildQuizPool();
-  state.quiz.index = 0; 
-  state.quiz.right = 0; 
-  state.quiz.finished = false;
-  quizRestart.hidden = true;
-
-  if (state.quiz.pool.length === 0){
-    quizMeta.textContent = 'Нет карточек для квиза — отметьте «Повторить» или с низким Box.';
-    quizPrompt.textContent = 'Пул пуст.';
-    quizOpts.innerHTML = '';
-    return;
-  }
-
-  nextQuizQ();
-} // ← здесь закрываем startQuiz
-
-// ← и ТЕПЕРЬ — отдельной функцией (вне startQuiz)
-function repaintQuizCurrent(){
-  const q = state.quiz;
-  if (!q || q.finished) return;
-
-  if (!q.pool || q.pool.length === 0){
-    startQuiz();
-    return;
-  }
-
-  const card = q.pool[q.index];
-  const { prompt, options, correctIndex } = choiceSet(
-    card, state.cards, state.shuffleSeed + q.index
-  );
-
-  quizPrompt.textContent = prompt;
-  quizOpts.innerHTML = '';
-  options.forEach((opt, i) => {
-    const b = document.createElement('button');
-    b.textContent = opt;
-    b.addEventListener('click', ()=>{
-      const children = Array.from(quizOpts.children);
-      children.forEach((x, idx) => x.classList.toggle('correct', idx === correctIndex));
-
-      if (i === correctIndex) {
-        q.right++;
-        card.box = clamp(card.box+1, 1, 5);
-        card.repeat = false;
-        card.last = now();
-      } else {
-        card.repeat = true;
-        card.box = 1;
-        card.learned = false;
-        card.hard = true;
-        children[i].classList.add('wrong');
-      }
-
-      saveState();
-      refreshProgressUI();
-      renderList();
-
-      children.forEach(x => x.disabled = true);
-      setTimeout(()=>{ q.index++; nextQuizQ(); }, 550);
-    }, { once:true });
-    quizOpts.appendChild(b);
-  });
-
-  quizRestart.hidden = true;
-  quizMeta.textContent = `вопрос ${q.index+1} из ${q.pool.length}, правильных ${q.right}`;
-}
-
-  function choiceSet(correct, allCards, seed){
-    const pool=allCards.filter(c=>c.id!==correct.id); const opts=[]; let s=seed;
-    while(opts.length<3 && pool.length){ s+=.73; const i=Math.floor(prng(s)*pool.length); const [pick]=pool.splice(i,1); opts.push(pick); }
-    const prompt= state.direction==='EN2ES'? correct.front : correct.back;
-    const correctAns= state.direction==='EN2ES'? correct.back : correct.front;
-    const answers=[correctAns, ...opts.map(c=> state.direction==='EN2ES'? c.back : c.front )];
-    const arr=answers.map((v,i)=>({v,i})); for(let i=arr.length-1;i>0;i--){ s+=.41; const j=Math.floor(prng(s)*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
-    return { prompt, options: arr.map(x=>x.v), correctIndex: arr.findIndex(x=>x.i===0) };
-  }
-  function nextQuizQ(){
-    const q=state.quiz, total=q.pool.length;
-    if(q.index>=total){ q.finished=true; quizMeta.textContent=`Готово! правильных ${q.right} из ${total}`; quizPrompt.textContent='Квиз завершён'; quizOpts.innerHTML=''; quizRestart.hidden=false; return; }
-    const card=q.pool[q.index]; const {prompt,options,correctIndex}=choiceSet(card,state.cards,state.shuffleSeed+q.index);
-    quizPrompt.textContent=prompt; quizOpts.innerHTML='';
-    options.forEach((opt,i)=>{ const b=document.createElement('button'); b.textContent=opt;
-      b.addEventListener('click', ()=>{
-        const children=Array.from(quizOpts.children); children.forEach((x,idx)=>x.classList.toggle('correct', idx===correctIndex));
-        if(i===correctIndex){ q.right++; card.box=clamp(card.box+1,1,5); card.repeat=false; card.last=now(); }
-        else{ card.repeat=true; card.box=1; card.learned=false; card.hard=true; children[i].classList.add('wrong'); }
-        saveState(); refreshProgressUI(); renderList(); children.forEach(x=>x.disabled=true); setTimeout(()=>{ q.index++; nextQuizQ(); }, 550);
-      }, {once:true});
-      quizOpts.appendChild(b);
-    });
-    quizRestart.hidden=true; quizMeta.textContent=`вопрос ${q.index+1} из ${total}, правильных ${q.right}`;
-  }
-  quizRestart.addEventListener('click', startQuiz);
-
-  /** ---------- Autotranslate (online + offline >1000) ---------- */
-  const LT_ENDPOINTS = [
-    'https://libretranslate.de/translate',
-    'https://translate.terraprint.co/translate',
-    'https://libretranslate.com/translate'
-  ];
-
-  // Базовая лексика (EN→ES) + гендер (m/f) для артикля
-  const NOUNS = {
-    "airport":{es:"aeropuerto",g:"m"},"station":{es:"estación",g:"f"},"bus":{es:"autobús",g:"m"},"train":{es:"tren",g:"m"},
-    "taxi":{es:"taxi",g:"m"},"subway":{es:"metro",g:"m"},"ticket":{es:"billete",g:"m"},"toilet":{es:"baño",g:"m"},
-    "bathroom":{es:"baño",g:"m"},"pharmacy":{es:"farmacia",g:"f"},"hospital":{es:"hospital",g:"m"},"doctor":{es:"médico",g:"m"},
-    "police":{es:"policía",g:"f"},"hotel":{es:"hotel",g:"m"},"room":{es:"habitación",g:"f"},"key":{es:"llave",g:"f"},
-    "reception":{es:"recepción",g:"f"},"restaurant":{es:"restaurante",g:"m"},"menu":{es:"menú",g:"m"},"breakfast":{es:"desayuno",g:"m"},
-    "lunch":{es:"almuerzo",g:"m"},"dinner":{es:"cena",g:"f"},"water":{es:"agua",g:"f"},"coffee":{es:"café",g:"m"},
-    "tea":{es:"té",g:"m"},"beer":{es:"cerveza",g:"f"},"wine":{es:"vino",g:"m"},"bread":{es:"pan",g:"m"},
-    "bottle":{es:"botella",g:"f"},"glass":{es:"vaso",g:"m"},"plate":{es:"plato",g:"m"},"fork":{es:"tenedor",g:"m"},
-    "knife":{es:"cuchillo",g:"m"},"spoon":{es:"cuchara",g:"f"},"napkin":{es:"servilleta",g:"f"},"salt":{es:"sal",g:"f"},
-    "sugar":{es:"azúcar",g:"m"},"pepper":{es:"pimienta",g:"f"},"oil":{es:"aceite",g:"m"},"bill":{es:"cuenta",g:"f"},
-    "receipt":{es:"recibo",g:"m"},"discount":{es:"descuento",g:"m"},"market":{es:"mercado",g:"m"},"supermarket":{es:"supermercado",g:"m"},
-    "store":{es:"tienda",g:"f"},"shop":{es:"tienda",g:"f"},"cash":{es:"efectivo",g:"m"},"card":{es:"tarjeta",g:"f"},
-    "bank":{es:"banco",g:"m"},"atm":{es:"cajero",g:"m"},"map":{es:"mapa",g:"m"},"street":{es:"calle",g:"f"},
-    "center":{es:"centro",g:"m"},"beach":{es:"playa",g:"f"},"park":{es:"parque",g:"m"},"museum":{es:"museo",g:"m"},
-    "ticket office":{es:"taquilla",g:"f"},"platform":{es:"andén",g:"m"},"gate":{es:"puerta",g:"f"},"passport":{es:"pasaporte",g:"m"},
-    "phone":{es:"teléfono",g:"m"},"charger":{es:"cargador",g:"m"},"adapter":{es:"adaptador",g:"m"},"wifi":{es:"wifi",g:"m"},
-    "password":{es:"contraseña",g:"f"},"reservation":{es:"reserva",g:"f"},"table":{es:"mesa",g:"f"},"chair":{es:"silla",g:"f"},
-    "left":{es:"izquierda",g:"f"},"right":{es:"derecha",g:"f"},"airport bus":{es:"autobús del aeropuerto",g:"m"},
-    "entrance":{es:"entrada",g:"f"},"exit":{es:"salida",g:"f"},"pharmacy on duty":{es:"farmacia de guardia",g:"f"}
-  };
-
-  const FIXED_EN2ES = {
-    "hello":"hola","hi":"hola","good morning":"buenos días","good afternoon":"buenas tardes","good evening":"buenas noches",
-    "good night":"buenas noches","please":"por favor","thank you":"gracias","thanks":"gracias","you are welcome":"de nada",
-    "sorry":"lo siento","excuse me":"disculpe","yes":"sí","no":"no","help":"ayuda","i don’t understand":"no entiendo",
-    "i don't understand":"no entiendo","do you speak english?":"¿habla inglés?","i speak a little spanish":"hablo un poco de español",
-    "how much is this?":"¿cuánto cuesta esto?","where is the bathroom?":"¿dónde está el baño?","the bill, please":"la cuenta, por favor",
-    "one ticket, please":"un billete, por favor","water, please":"agua, por favor","i would like":"me gustaría","i need help":"necesito ayuda"
-  };
-
-  // Простые числа (0-100) для фраз "… euros"
-  const NUM = ["zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty"];
-  function enNumberToEs(s){
-    const m = s.match(/^(\d{1,3})(\s+)?(euros|euro)?$/);
-    if(!m) return null;
-    const n = +m[1]; const tail = m[3] ? ' euros' : '';
-    const specials = {0:'cero',1:'uno',2:'dos',3:'tres',4:'cuatro',5:'cinco',6:'seis',7:'siete',8:'ocho',9:'nueve',10:'diez',11:'once',12:'doce',13:'trece',14:'catorce',15:'quince',20:'veinte',30:'treinta',40:'cuarenta',50:'cincuenta',60:'sesenta',70:'setenta',80:'ochenta',90:'noventa',100:'cien'};
-    if(specials[n]) return specials[n] + (tail? ' euros':'');
-    if(n<20) return specials[n]+(tail?' euros':'');
-    if(n<100){ const tens=Math.floor(n/10)*10; const ones=n%10; return specials[tens] + (ones? ' y '+specials[ones]:'') + (tail?' euros':''); }
-    if(n===100) return 'cien' + (tail?' euros':'');
-    return null;
-  }
-
-  function art(word, g){ // артикль с учётом начального ударного a- (agua → el agua)
-    if(g==='m') return 'el ' + word;
-    // femeninos con a- tónica usan "el" в ед. числе (agua, águila…)
-    if(g==='f' && /^[aá]gua|^[aá]guila|^[aá]rpa|^[aá]rea/.test(word)) return 'el ' + word;
-    return 'la ' + word;
-  }
-
-  function findNoun(en){
-    const k = en.toLowerCase().trim();
-    if(NOUNS[k]) return NOUNS[k];
-    // попытка без артикля
-    const noArticle = k.replace(/^(the|a|an)\s+/,'').trim();
-    return NOUNS[noArticle] || null;
-  }
-
-  function templateEN2ES(s){
-    let t = s.trim().toLowerCase().replace(/\s+/g,' ');
-    if(FIXED_EN2ES[t]) return FIXED_EN2ES[t];
-
-    // Числа / цены
-    const num = enNumberToEs(t);
-    if(num) return num;
-
-    // where is the [NOUN]
-    let m = t.match(/^where\s+is\s+(the\s+|a\s+|an\s+)?(.+)\??$/);
-    if(m){
-      const n = findNoun(m[2]); if(n) return `¿dónde está ${art(n.es,n.g)}?`;
-    }
-
-    // do you have [NOUN]
-    m = t.match(/^do\s+you\s+have\s+(the\s+|a\s+|an\s+)?(.+)\??$/);
-    if(m){
-      const n = findNoun(m[2]); if(n) return `¿tiene ${art(n.es,n.g)}?`;
-    }
-
-    // i need / i want / i would like [NOUN]
-    m = t.match(/^i\s+(need|want|would like)\s+(the\s+|a\s+|an\s+)?(.+)\.?$/);
-    if(m){
-      const verb = m[1]==='need' ? 'necesito' : (m[1]==='want' ? 'quiero' : 'me gustaría');
-      const n = findNoun(m[3]);
-      if(n) return `${verb} ${art(n.es,n.g)}`;
-    }
-
-    // one/two ... [NOUN] please
-    m = t.match(/^(one|two|three|four|five)\s+(.+)\s+please\.?$/);
-    if(m){
-      const numMap = {one:'un',two:'dos',three:'tres',four:'cuatro',five:'cinco'};
-      const n = findNoun(m[2]); if(n) return `${numMap[m[1]]} ${n.es}, por favor`;
-    }
-
-    // how much is (the) [NOUN]
-    m = t.match(/^how\s+much\s+is\s+(the\s+|a\s+|an\s+)?(.+)\??$/);
-    if(m){
-      const n = findNoun(m[2]); if(n) return `¿cuánto cuesta ${art(n.es,n.g)}?`;
-    }
-
-    // turn left/right
-    m = t.match(/^turn\s+(left|right)\.?$/);
-    if(m){
-      const dir = m[1]==='left' ? 'izquierda' : 'derecha';
-      return `gire a la ${dir}`;
-    }
-
-    // simple greetings variants
-    m = t.match(/^good\s+(morning|afternoon|evening|night)\.?$/);
-    if(m){
-      return {morning:'buenos días',afternoon:'buenas tardes',evening:'buenas noches',night:'buenas noches'}[m[1]];
-    }
-
-    return null; // не распознали
-  }
-
-  function templateES2EN(s){
-    const t = s.trim().toLowerCase();
-    // обратные фиксированные
-    for(const [k,v] of Object.entries(FIXED_EN2ES)){ if(v===t) return k; }
-    // простые вопросы
-    if(/^¿dónde está /.test(t)) return 'where is it?';
-    if(/^¿tiene /.test(t)) return 'do you have it?';
-    if(/^gire a la /.test(t)) return 'turn (left/right)';
-    return null;
-  }
-
-  const SMALL_DICT_EN2ES = {
-    "where is the bathroom?":"¿dónde está el baño?","the bill, please":"la cuenta, por favor","water":"agua","coffee":"café",
-    "tea":"té","bread":"pan","help":"ayuda","i need help":"necesito ayuda","i would like a coffee":"me gustaría un café",
-    "one ticket please":"un billete, por favor"
-  };
-  const SMALL_DICT_ES2EN = Object.fromEntries(Object.entries(SMALL_DICT_EN2ES).map(([k,v])=>[v,k]));
-
-// 🔥 Большой офлайн-словарь (заполняется из встроенного JSON)
-let BIG_DICT_EN2ES = Object.create(null);
-let BIG_DICT_ES2EN = Object.create(null);
-
-  async function translateOnline(q, dir, signal){
-    const payload = {
-  q,                     // ← используем аргумент функции
-  source: 'auto',
-  target: dir === 'EN2ES' ? 'es' : 'en',
-  format: 'text'
-};
-    for(const url of LT_ENDPOINTS){
-      try{
-        const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), signal });
-        if(!res.ok) continue;
-        const data = await res.json();
-        const txt = data?.translatedText || '';
-        if(txt) return txt;
-      }catch(e){ /* try next */ }
-    }
-    throw new Error('online_fail');
-  }
-
-  function offlineTranslate(text, dir){
-  const t = (text||'').trim().toLowerCase();
-  if(!t) return '';
-  if(dir==='EN2ES'){
-    if (BIG_DICT_EN2ES[t])   return BIG_DICT_EN2ES[t];   // ← сначала большой
-    if (SMALL_DICT_EN2ES[t]) return SMALL_DICT_EN2ES[t];
-    const byTpl = templateEN2ES(t); if(byTpl) return byTpl;
-    const rm = t.replace(/\b(the|a|an)\b/g,'').trim();
-    const n = findNoun(rm); if(n) return n.es;
+/* ---------- обычная логика калькулятора ---------- */
+function inputDigit(d){
+  if (state.justEvaluated){
+    state.cur = d; state.justEvaluated=false;
   } else {
-    if (BIG_DICT_ES2EN[t])   return BIG_DICT_ES2EN[t];   // ← сначала большой
-    if (SMALL_DICT_ES2EN[t]) return SMALL_DICT_ES2EN[t];
-    const byTpl = templateES2EN(t); if(byTpl) return byTpl;
+    state.cur = (state.cur==='0') ? d : state.cur + d;
   }
-  return t;
+}
+function inputDot(){
+  if (state.justEvaluated){ state.cur='0.'; state.justEvaluated=false; return; }
+  if (!state.cur.includes('.')) state.cur += '.';
+}
+function toggleSign(){
+  if (state.cur==='0') return;
+  state.cur = state.cur.startsWith('-') ? state.cur.slice(1) : '-' + state.cur;
+}
+function percent(){
+  let n = parseFloat(state.cur||'0');
+  n = n/100;
+  state.cur = String(n);
+}
+function setOperator(op){
+  if (state.op && !state.justEvaluated){
+    // вычисляем по цепочке как в iOS
+    evaluate();
+  }
+  state.prev = state.cur;
+  state.op = op;
+  state.justEvaluated=false;
+  state.cur='0';
+}
+function evaluate(){
+  if (!state.op || state.prev===null) return;
+  const a = parseFloat(state.prev), b = parseFloat(state.cur);
+  let r = 0;
+  switch(state.op){
+    case '+': r = a + b; break;
+    case '−': r = a - b; break;
+    case '×': r = a * b; break;
+    case '÷': r = b===0 ? NaN : a / b; break;
+  }
+  state.cur = String(r);
+  state.prev=null; state.op=null; state.justEvaluated=true;
+}
+function backspace(){
+  if (state.justEvaluated){ state.cur='0'; state.justEvaluated=false; return; }
+  if (state.cur.length <= 1 || (state.cur.length===2 && state.cur.startsWith('-'))){
+    state.cur = '0';
+  } else {
+    state.cur = state.cur.slice(0,-1);
+  }
 }
 
-  function setTrStatus(msg){ trStatus.innerHTML = msg? `<span>${msg}</span>` : '<span class="spinner"></span>'; }
-  let trAbort = null;
-  function withTimeout(ms){
-    const c = new AbortController();
-    const t = setTimeout(()=>c.abort(), ms);
-    c.cleanup = ()=> clearTimeout(t);
-    return c;
+/* ---------- секретный режим ---------- */
+// двойное нажатие по AC включает secret
+let lastACTap = 0;
+function handleAC(){
+  const t = now();
+  const dbl = (t - lastACTap) < 600;
+  lastACTap = t;
+
+  // если есть ввод — работаем как backspace
+  if (state.cur!=='0' || state.justEvaluated){
+    backspace();
+    render();
+    if (dbl){ enableSecretMode(); }
+    return;
   }
-
-  async function doTranslateActive(){
-    const front = addFront.value.trim();
-    const back  = addBack.value.trim();
-    let fromEl, toEl, dir;
-
-    if (front && !back) {
-  dir = 'EN2ES'; fromEl = addFront; toEl = addBack;
-} else if (back && !front) {
-  dir = 'ES2EN'; fromEl = addBack; toEl = addFront;
-} else {
-  // оба поля есть — ориентируемся по фокусу, по умолчанию front→back
-  const ae = document.activeElement;
-  if (ae === addBack) { dir = 'ES2EN'; fromEl = addBack; toEl = addFront; }
-  else                { dir = 'EN2ES'; fromEl = addFront; toEl = addBack; }
+  // пусто: полный сброс обычный
+  hardReset();
+  if (dbl){ enableSecretMode(); }
+}
+function enableSecretMode(){
+  state.secret = true;
+  state.secretChosen = null;
+  state.secretArmed = false;
+  // ничего визуально не меняем
 }
 
-    setTrStatus('Перевод…');
-    btnTranslate.disabled = true;
+function secretDigitSelect(d){
+  if (!state.secret) return false;
+  if (state.secretChosen === null){
+    state.secretChosen = d;     // тихо выбранная цифра
+    state.secretArmed   = true; // ждём зрителя
+    return true;                // поглотили событие
+  }
+  return false;
+}
 
-    if(trAbort){ try{ trAbort.abort(); }catch{} }
-    trAbort = withTimeout(5000);
+function secretMaybeShowForced(){
+  if (!state.secret) return false;
+  if (state.secretArmed && state.secretChosen !== null){
+    state.cur = state.secretChosen;
+    state.justEvaluated=false;
+    // остаёмся в режиме и дальше «липнем» к выбранной цифре
+    return true;
+  }
+  return false;
+}
+function exitSecretMode(){
+  state.secret=false;
+  state.secretChosen=null;
+  state.secretArmed=false;
+}
 
-    try{
-      const online = await translateOnline(fromEl.value, dir, trAbort.signal);
-      toEl.value = online;
-      setTrStatus('Готово ✓');
-    }catch(e){
-      // офлайн шаблоны (>1000 комбинаций)
-      toEl.value = offlineTranslate(fromEl.value, dir);
-      setTrStatus('Оффлайн перевод');
-    }finally{
-      btnTranslate.disabled = false;
-      if(trAbort?.cleanup) trAbort.cleanup();
-      trAbort = null;
-    }
+/* ---------- сбросы ---------- */
+function hardReset(){
+  state.cur='0'; state.prev=null; state.op=null; state.justEvaluated=false;
+}
+function fullResetAll(){
+  hardReset(); exitSecretMode(); render();
+}
+
+/* ---------- обработка нажатий ---------- */
+keys.addEventListener('click', (e)=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  const key = btn.dataset.key;
+
+  // секрет: первая цифра после активации выбирает принудительную
+  if (/^\d$/.test(key) && secretDigitSelect(key)){ /* селектнули — выходим */
+    return;
   }
 
-  // debounce для автоперевода
-  let trTimer = null;
-  function scheduleAutoTranslate(){
-    if(!autoTranslate.checked) return;
-    if(trTimer) clearTimeout(trTimer);
-    trTimer = setTimeout(()=>{ doTranslateActive(); }, 600);
+  // если секрет активен и «заряжен» — любое нажатие показывает выбранную цифру
+  if (secretMaybeShowForced()){ render(); return; }
+
+  switch(key){
+    case 'AC': handleAC(); break;
+    case '+/-': toggleSign(); break;
+    case '%': percent(); break;
+    case '.': inputDot(); break;
+    case '+': case '−': case '×': case '÷': setOperator(key); break;
+    case '=': evaluate(); exitSecretMode(); break;
+    default:  // цифры
+      if(/^\d$/.test(key)){ inputDigit(key); }
   }
-
-  /** Keyboard & Clicks */
-  function hasInputFocus(){ const ae=document.activeElement; return ae && (['INPUT','TEXTAREA'].includes(ae.tagName) || ae.isContentEditable); }
-  window.addEventListener('keydown', (e)=>{ if(hasInputFocus()) return; if(state.tab!=='flash') return;
-    if(e.code==='Space'){ e.preventDefault(); flipCard(); }
-    else if(e.key==='ArrowRight'){ e.preventDefault(); applyLearned(); }
-    else if(e.key==='ArrowLeft'){ e.preventDefault(); applyRepeat(); }
-    else if((e.key||'').toLowerCase()==='n'){ e.preventDefault(); nextCard(); }
-  });
-
-  $('#zoneFlip').addEventListener('click', ()=>flipCard());
-  $('#zoneNext').addEventListener('click', ()=>nextCard());
-  $('#zoneBack').addEventListener('click', ()=>prevCard());
-  btnLearned.addEventListener('click', applyLearned);
-  btnRepeat.addEventListener('click', applyRepeat);
-  tabFlash.addEventListener('click', ()=>switchTab('flash'));
-  tabQuiz .addEventListener('click', ()=>switchTab('quiz'));
-  btnSettings.addEventListener('click', ()=>{
-  buildPalettes();                                  // палитры
-  if (settingsListWrap && elList && elList.parentElement !== settingsListWrap) {
-    settingsListWrap.appendChild(elList);           // переносим #list в модалку
-  }
-  renderList();
-
-  // ❗ Открываем настройки с закрытым списком
-  state.showList = false;
-  applyListVisibility();
-
-  dlgSettings.showModal();
+  render();
 });
 
-  if (btnAdd) {
-  btnAdd.addEventListener('click', () => {
-    document.activeElement?.blur?.();        // гасим возможный фокус
-    dlgAdd.showModal();                       // открыть диалог
-    dlgAdd.focus({ preventScroll: true });    // фокус на диалог
-  });
+/* длинное нажатие на "=" — аварийный выход из секрета */
+onLongPress(keyEq, 1500, ()=>{ exitSecretMode(); render(); });
+
+/* AC ведёт себя как backspace/AC + двойной тап — секрет; длинный тап — жёсткий сброс */
+onLongPress(keyAC, 1000, ()=>{ fullResetAll(); });
+
+/* скрытый Full Reset через долгий тап по ☰ */
+onLongPress(btnMenu, 1200, ()=>{ sheet.classList.add('open'); });
+document.getElementById('btnCloseSheet').onclick = ()=> sheet.classList.remove('open');
+document.getElementById('btnFullReset').onclick  = ()=>{ sheet.classList.remove('open'); fullResetAll(); };
+
+/* ---------- рендер ---------- */
+function render(){
+  setDisplay(state.cur);
+  updateACVisual();
 }
+render();
 
-  addFront.addEventListener('input', scheduleAutoTranslate);
-addBack .addEventListener('input', scheduleAutoTranslate);
-btnTranslate.addEventListener('click', doTranslateActive);
-
-// ➕ реагируем на включение/выключение автоперевода
-autoTranslate.addEventListener('change', () => {
-  setTrStatus(autoTranslate.checked ? 'Автоперевод вкл' : 'Автоперевод выкл');
-  if (autoTranslate.checked) {
-    // если в одном из полей уже есть текст — запустим перевод сразу
-    scheduleAutoTranslate();
-  }
-});
-
-    // Диалог "Новая карточка" — обработчики
-btnClearAdd.addEventListener('click', () => {
-  addFront.value = '';
-  addBack.value  = '';
-  addFront.focus();
-});
-
-btnAddClose.addEventListener('click', () => {
-  dlgAdd.close();
-  btnAdd.focus(); // можно удалить, если не нужен возврат фокуса на "＋"
-});
-
-addForm.addEventListener('submit', (ev) => {
-  ev.preventDefault();
-  const f = addFront.value.trim();
-  const b = addBack.value.trim();
-  if (!f || !b) return;
-
-  addCard(f, b);
-  addFront.value = '';
-  addBack.value  = '';
-  refreshProgressUI();
-  renderList();
-  renderFlash();
-  dlgAdd.close();
-});
-
-    /** Init */
-  function init(){
-    const loaded = loadState();
-    if (loaded) Object.assign(state, loaded);
-if (!Array.isArray(state.history)) state.history = [];
-
-    // Дефолтная тема при первом запуске (когда в localStorage ещё пусто)
-    // Init()
-if (!state.theme || (!state.theme.bg0 && !state.theme.card1)) {
-  state.theme = { ...BG_PRESETS[0], ...CARD_PRESETS[0] };
-  applyTheme(state.theme);
-  saveState();
-} else {
-  applyTheme(state.theme);
-}
-
-// ⬇️ грузим большой словарь из встроенного JSON
-  loadOfflineDictFromEmbedded();
-
-  
-// ---------- Загрузка большого словаря из <script type="application/json" id="offlineDictENES">
-function loadOfflineDictFromEmbedded(){
-  try{
-    const tag = document.getElementById('offlineDictENES');
-    if(!tag) return;
-    const txt = (tag.textContent || '').trim();
-    if(!txt) return;
-
-    const arr = JSON.parse(txt); // ожидаем массив объектов {en, es}
-    const m = Object.create(null);
-    for (const row of arr){
-      const en = String(row.en||'').trim().toLowerCase();
-      const es = String(row.es||'').trim().toLowerCase();
-      if (en && es) m[en] = es;
-    }
-    BIG_DICT_EN2ES = m;
-    BIG_DICT_ES2EN = Object.fromEntries(Object.entries(BIG_DICT_EN2ES).map(([en,es])=>[es,en]));
-    console.log('Offline dict loaded:', Object.keys(BIG_DICT_EN2ES).length, 'pairs');
-  }catch(e){
-    console.warn('Embedded offline dict parse error', e);
-  }
-}
-
-    ensureDemo();
-    elBtnDir.textContent = directionLabel();
-    renderFlash();
-    renderList();
-    refreshProgressUI();
-    applyListVisibility();
-    switchTab(state.tab || 'flash');
-    flipCard(false);
-
-    miniTests();
-  }
-  init();
-
-  /** Mini tests */
-  function miniTests(){
-  console.log('%cMini tests','background:#352b66;color:#fff;padding:2px 6px;border-radius:6px');
-  const seedBefore=state.shuffleSeed;
-  const weights=state.cards.map(c=>1/Math.max(1,c.box));
-  const pick1=weightedPick(weights,null,seedBefore);
-  const seedAfter=state.shuffleSeed;
-  console.log('Seed immutable:', seedBefore===seedAfter, {pick1,seedBefore,seedAfter});
-  const tmp=[{box:5,learned:false},{box:1,learned:true},{box:3}];
-  const learnedCount=tmp.filter(c=>c.learned||c.box>=4).length;
-  console.log('Progress test (2):', learnedCount);
-}
-})();
+/* ---------- запрет жестов зума на iOS Safari ---------- */
+document.addEventListener('gesturestart', e=> e.preventDefault());
+let lastTouchEnd=0;
+document.addEventListener('touchend', e=>{
+  const nowTs=Date.now();
+  if (nowTs-lastTouchEnd<=300) e.preventDefault();
+  lastTouchEnd=nowTs;
+}, {passive:false});
 </script>
 </body>
 </html>
